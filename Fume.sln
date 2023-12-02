@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fume.api", "fume.api\fume.a
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fume.Web", "Fume.Web\Fume.Web.csproj", "{882B1624-070A-4ECD-9882-EF35D241F8AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fume.Movile", "Fume.Movile\Fume.Movile.csproj", "{98501AAE-BED0-4658-BE42-9CE4E8809A4E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fume.Mobile", "Fume.Movile\Fume.Mobile.csproj", "{98501AAE-BED0-4658-BE42-9CE4E8809A4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
