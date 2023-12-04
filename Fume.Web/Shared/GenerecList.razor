@@ -1,0 +1,47 @@
+﻿
+@typeparam Titem
+
+@if(Mylist is null)
+{
+    @if(Loading is null)
+    {
+        <div class="d-flex align-items-center justify-content-center" style="height: 100vh;">
+            <img src="https://cdn.pixabay.com/animation/2022/07/29/03/42/03-42-11-849_512.gif" class="img-fluid" alt="Centrada" />
+        </div>
+    }
+}
+else if(Mylist.Count == 0)
+{
+    @if (NoRecords is null)
+    {
+        <div class="align-items-center">
+            <p> No hay registros para mostrar.</p>    
+        </div>
+    }
+    else
+    {
+        @NoRecords
+    }
+}
+else
+{
+    @Body
+    
+}
+
+
+@code {
+    [Parameter]
+    public RenderFragment? Loading { get; set; }
+
+    [Parameter]
+    public RenderFragment? NoRecords { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public RenderFragment Body { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public List<Titem> Mylist { get; set; } = null!;
+}
