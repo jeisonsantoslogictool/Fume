@@ -16,32 +16,33 @@ namespace fume.api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAsync()
+        public async Task<ActionResult> Get()
         {
-            return Ok(await  _Context.Countries.ToListAsync());
+            return Ok(await _Context.Countries.ToListAsync());
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> Post(Country country)
+        {
+            _Context.Add(country);
+            await _Context.SaveChangesAsync();
+            return Ok(country);
         }
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetAsync( int id )
+        public async Task<ActionResult> Get(int id)
         {
             var country = await _Context.Countries.FirstOrDefaultAsync(x => x.Id == id);
-            if(country == null )
+            if (country is null)
             {
                 return NotFound();
             }
 
-            return Ok();
-        }
-        [HttpPost]
-        public async Task<ActionResult> PostAsync(Country country)
-        {
-            _Context.Add(country);
-           await _Context.SaveChangesAsync();
             return Ok(country);
         }
 
         [HttpPut]
-        public async Task<ActionResult> PutAsync(Country country)
+        public async Task<ActionResult> Put(Country country)
         {
             _Context.Update(country);
             await _Context.SaveChangesAsync();
@@ -49,18 +50,19 @@ namespace fume.api.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteAsync(int id)
+        public async Task<ActionResult> Delete(int id)
         {
-            var country = await _Context.Countries.FirstOrDefaultAsync(x => x.Id == id);
-            if (country == null)
+            var afectedRows = await _Context.Countries
+                .Where(x => x.Id == id)
+                .ExecuteDeleteAsync();
+
+            if (afectedRows == 0)
             {
                 return NotFound();
-
             }
 
-            _Context.Remove(country);
-            await _Context.SaveChangesAsync();
             return NoContent();
         }
+
     }
 }
