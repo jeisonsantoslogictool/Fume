@@ -18,15 +18,42 @@ namespace fume.api.Controllers
         [HttpGet]
         public async Task<ActionResult> Get()
         {
-            return Ok(await _Context.Countries.ToListAsync());
+            return Ok(await _Context.Countries
+                .Include(x => x.States)
+                .ToListAsync());
+        }
+        [HttpGet("Full")]
+        public async Task<ActionResult> GetFull()
+        {
+            return Ok(await _Context.Countries
+                .Include(x => x.States!)
+                .ThenInclude(x => x.Cities)
+                .ToListAsync());
         }
 
         [HttpPost]
         public async Task<ActionResult> Post(Country country)
         {
-            _Context.Add(country);
-            await _Context.SaveChangesAsync();
-            return Ok(country);
+            try
+            {
+                _Context.Add(country);
+                await _Context.SaveChangesAsync();
+                return Ok(country);
+            }
+            catch (DbUpdateException dbupdateexception)
+            {
+                if(dbupdateexception.InnerException!.Message.Contains("duplicate"))
+                {
+                    return BadRequest("Ya existe un pais con el mismo nombre.");
+                }
+
+                return BadRequest(dbupdateexception.Message);
+             
+            }
+            catch(Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         [HttpGet("{id:int}")]
@@ -44,9 +71,26 @@ namespace fume.api.Controllers
         [HttpPut]
         public async Task<ActionResult> Put(Country country)
         {
-            _Context.Update(country);
-            await _Context.SaveChangesAsync();
-            return Ok(country);
+            try
+            {
+                _Context.Update(country);
+                await _Context.SaveChangesAsync();
+                return Ok(country);
+            }
+            catch (DbUpdateException dbupdateexception)
+            {
+                if (dbupdateexception.InnerException!.Message.Contains("duplicate"))
+                {
+                    return BadRequest("Ya existe un pais con el mismo nombre.");
+                }
+
+                return BadRequest(dbupdateexception.Message);
+
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         [HttpDelete("{id:int}")]
