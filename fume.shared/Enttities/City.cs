@@ -19,8 +19,8 @@ namespace fume.shared.Enttities
 
         public int StateId { get; set; }
 
-        
-
         public State? States { get; set; }
+
+        public ICollection<User>? Users { get; set; }
     }
 }
