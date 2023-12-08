@@ -14,14 +14,17 @@ namespace fume.shared.Enttities
         [Required(ErrorMessage = "El campo{0} es obligatorio.")]
         [MaxLength(100, ErrorMessage = "El campo {0} no puede tener mas de {1} caracteres")]
 
-        public int CountryId { get; set; }
-
         public string Name { get; set; } = null!;
+
+
+        public int CountryId { get; set; }
 
         public Country? country { get; set; }
 
         public ICollection<City>? Cities { get; set; }
 
+        [Display(Name = "Ciudades")]
+        
         public int CitiesNumber => Cities == null ? 0 : Cities.Count;
 
     }

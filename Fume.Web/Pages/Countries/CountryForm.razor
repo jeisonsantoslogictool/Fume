@@ -2,7 +2,7 @@
 
 <NavigationLock OnBeforeInternalNavigation=" OnBeforeInternalNavigation" />
 
-<EditForm EditContext= "editcontext" OnValidSubmit="OnValidSubmit">
+<EditForm EditContext="editcontext" OnValidSubmit="OnValidSubmit">
     <DataAnnotationsValidator/>
     <div class=" mb-3">
         <label> Pais:</label>
@@ -12,8 +12,10 @@
         </div>
 
     </div>
-    <button class=" btn btn-primary" type="submit">Guardar</button>
+    <button class=" btn btn-primary" type="submit" >Guardar</button>
     <button class=" btn btn-success" @onclick="ReturnAction">Regresar</button>
+   
+       
 
 </EditForm>
 
@@ -38,12 +40,16 @@
     {
         editcontext = new(country);
     }
+
     private async Task OnBeforeInternalNavigation (LocationChangingContext context)
     {
-        var formWas = editcontext.IsModified();
+       
+        var formWas =editcontext.IsModified();
         if(!formWas || FormScucess)
         {
+
             return;
+
         }
 
         if (FormScucess)
@@ -60,11 +66,24 @@
                 CancelButtonText = "NO",
                 ConfirmButtonText = "SI"
         });
+       
         var confirm = !string.IsNullOrEmpty(result.Value);
         if(confirm)
         {
             return;
         }
         context.PreventNavigation();
+    }
+    private async Task OnValidSubmitHandler()
+    {
+       
+        var guardar = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = "Guardado Con Éxito",
+                Icon = SweetAlertIcon.Success,
+                ShowCancelButton = true,
+            });
+        FormScucess = true;
     }
 }

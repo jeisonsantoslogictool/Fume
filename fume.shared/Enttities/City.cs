@@ -15,9 +15,11 @@ namespace fume.shared.Enttities
         [Required(ErrorMessage = "El campo {0} es obligatorio.")]
         [MaxLength(150, ErrorMessage = "El campo {0} no puede tener mas de {1} Caracteres")]
 
+        public string Name { get; set; } = null!;
+
         public int StateId { get; set; }
 
-        public string Name { get; set; } = null!;
+        
 
         public State? States { get; set; }
     }

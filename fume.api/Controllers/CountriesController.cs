@@ -59,7 +59,10 @@ namespace fume.api.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult> Get(int id)
         {
-            var country = await _Context.Countries.FirstOrDefaultAsync(x => x.Id == id);
+            var country = await _Context.Countries
+                .Include(x => x.States)
+                .ThenInclude (x => x.Cities)
+                .FirstOrDefaultAsync(x => x.Id == id);
             if (country is null)
             {
                 return NotFound();

@@ -22,6 +22,14 @@
 
         contryForm!.FormScucess = true;
         navegationManager.NavigateTo("/countries");
+        await Sweetalertservice.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = "Guardado Con Éxito",
+                Icon = SweetAlertIcon.Success,
+                ShowCancelButton = true,
+            });
+
 
     }
     private async Task Return()

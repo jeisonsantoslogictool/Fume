@@ -1,33 +1,33 @@
-﻿@page "/Countries/edit/{Id:int}"
+﻿@page "/cities/edit/{CityId:int}"
 @inject IRepository repository
 @inject NavigationManager navigationmanager
 @inject SweetAlertService sweetalertservice
 
-<h3>Editar Pais</h3>
+<h3>Editar Ciudad:</h3>
 
-@if(country is null)
+@if (city is null)
 {
     <p>Cargando...</p>
 
 }
 else
 {
-    <CountryForm @ref="countryForm" country="country" OnValidSubmit="EditAsync" ReturnAction="Return" />
+    <CityForm @ref="cityForm" city="city" OnValidSubmit="EditAsync" ReturnAction="Return" />
 }
 
 @code {
-    private Country? country;
-    private CountryForm? countryForm;
+    private City? city;
+    private CityForm? cityForm;
 
     [Parameter]
-    public int Id { get; set; }
+    public int CityId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var responseHttp = await repository.Get<Country>($"/api/countries/{Id}");
-        if(responseHttp.Error)
+        var responseHttp = await repository.Get<City>($"/api/cities/{CityId}");
+        if (responseHttp.Error)
         {
-            if(responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
             {
                 navigationmanager.NavigateTo("/countries");
                 return;
@@ -37,35 +37,34 @@ else
             return;
 
         }
-        country = responseHttp.Response;
+        city = responseHttp.Response;
     }
     private async Task EditAsync()
     {
-        var responseHttp = await repository.Put("/api/countries", country);
-        if(responseHttp.Error)
+        var responseHttp = await repository.Put("/api/cities", city);
+        if (responseHttp.Error)
         {
             var message = await responseHttp.GetErrorMessageAsync();
             await sweetalertservice.FireAsync("Error", message, SweetAlertIcon.Error);
             return;
         }
 
-        countryForm!.FormScucess = true;
+        cityForm!.FormPostedSuccessfully = true;
         navigationmanager.NavigateTo("/countries");
         await sweetalertservice.FireAsync(new SweetAlertOptions
             {
                 Title = "Confirmación",
                 Text = "Guardado Con Éxito",
                 Icon = SweetAlertIcon.Success,
-                ShowCancelButton = true,
+               
             });
-        
+
     }
 
     private void Return()
     {
-        countryForm!.FormScucess = true;
-        navigationmanager.NavigateTo("/countries");
+        cityForm!.FormPostedSuccessfully = true;
+        navigationmanager.NavigateTo($"/states/details/{city!.StateId}");
     }
 
 }
-

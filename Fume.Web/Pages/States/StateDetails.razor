@@ -1,0 +1,144 @@
+﻿@page "/states/Details/{StateId:int}"
+@inject IRepository repository
+@inject NavigationManager navigationmanager
+@inject SweetAlertService sweetalertservice
+
+<h3>Detalles del Estado</h3>
+
+@if (state is null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <h3>@state.Name</h3>
+    <div>
+        <a class="btn btn-primary" href="/cities/create/@StateId"> Nueva Ciudad</a>
+        <a class="btn btn-outline-success" href="/countries/details/@state.CountryId"> Regresar</a>
+    </div>
+
+    <GenerecList Mylist="cities">
+        <Body>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+
+                        <th>Ciudad</th>
+                        
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var city in cities!)
+                    {
+                        <tr>
+
+                            <td>
+                                @city.Name
+                            </td>
+                            
+                            <td>                               
+                                <a class="btn btn-outline-warning" href="/cities/edit/@city.Id ">Editar</a>
+                                <button class="btn btn-danger" @onclick=@(() => DeleteAsync(city.Id))>Borrar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </Body>
+    </GenerecList>
+
+
+}
+
+@code {
+    private State? state;
+    private List<City>? cities;
+
+    [Parameter]
+    public int StateId { get; set; }
+
+    private async Task LoadAsync()
+    {
+       
+        var responseHttp = await repository.Get<State>($"/api/states/{StateId}");
+        if (responseHttp.Error)
+        {
+            if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+                navigationmanager.NavigateTo("/countries");
+                return;
+            }
+
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetalertservice.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+
+        }
+
+        state = responseHttp.Response;
+        cities = state!.Cities!.ToList();
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var responseHttp = await repository.Get<State>($"/api/states/{StateId}");
+        if (responseHttp.Error)
+        {
+            if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+                navigationmanager.NavigateTo("/countries");
+                return;
+            }
+
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetalertservice.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+
+        }
+
+        state = responseHttp.Response;
+        cities = state!.Cities!.ToList();
+    }
+
+    private async Task DeleteAsync(int CityId)
+    {
+        var result = await sweetalertservice.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = "¿Esta seguro que quieres borrar el registro?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true,
+                CancelButtonText = "NO",
+                ConfirmButtonText = "SI"
+            });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await repository.Delete($"api/cities/{CityId}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationmanager.NavigateTo("/");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetalertservice.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            await LoadAsync();
+        }
+    }
+}
+

@@ -1,0 +1,44 @@
+﻿@page "/cities/create/{StateId:int}"
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+
+<h3>Crear Estado/Departamento</h3>
+
+<CityForm @ref="cityForm" city="city" OnValidSubmit="CreateAsync" ReturnAction="Return" />
+
+@code {
+    private City city = new();
+    private CityForm? cityForm;
+
+    [Parameter]
+    public int StateId { get; set; }
+
+    private async Task CreateAsync()
+    {
+
+        city.StateId = StateId;
+        var httpResponse = await repository.post("/api/cities", city);
+        if (httpResponse.Error)
+        {
+            var message = await httpResponse.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirmación",
+                Text = "Guardado Con Éxito",
+                Icon = SweetAlertIcon.Success,
+                ShowCancelButton = true,
+            });
+
+        Return();
+    }
+
+    private void Return()
+    {
+        cityForm!.FormPostedSuccessfully = true;
+        navigationManager.NavigateTo($"/states/Details/{StateId}");
+    }
+}

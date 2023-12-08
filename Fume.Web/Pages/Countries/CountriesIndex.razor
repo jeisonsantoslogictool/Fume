@@ -12,8 +12,10 @@
         <table class="table table-striped">
             <thead>
                 <tr>
+                    
+                    <th>País</th>      
+                    <th>Provincias</th>
                     <th></th>
-                    <th>País</th>
                 </tr>
             </thead>
             <tbody>
@@ -28,7 +30,8 @@
                             @country.StatesNumber
                         </td>
                         <td>
-                            <a class="btn btn-warning" href="/Countries/edit/@country.Id ">Editar</a>
+                            <a class="btn btn-outline-success" href="/Countries/Details/@country.Id ">Detalles</a>
+                            <a class="btn btn-outline-warning" href="/Countries/edit/@country.Id ">Editar</a>
                             <button class="btn btn-danger" @onclick=@(() => DeleteAsync(country.Id))>Borrar</button>
                         </td>
                     </tr>
