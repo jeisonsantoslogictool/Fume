@@ -14,5 +14,11 @@ builder.Services.AddSingleton(sp => new HttpClient { BaseAddress = new Uri("http
 builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddSweetAlert2();
 builder.Services.AddAuthorizationCore();
-builder.Services.AddScoped<AuthenticationStateProvider, Authenticacion>();
+
+builder.Services.AddScoped<AutenticacionPro>();
+builder.Services.AddScoped<AuthenticationStateProvider, AutenticacionPro>(x => x.GetRequiredService<AutenticacionPro>());
+builder.Services.AddScoped<IloginService, AutenticacionPro>(x => x.GetRequiredService<AutenticacionPro>());
+
+
+
 await builder.Build().RunAsync();

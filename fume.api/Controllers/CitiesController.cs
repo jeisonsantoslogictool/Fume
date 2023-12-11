@@ -1,12 +1,16 @@
 ﻿using fume.api.Data;
 using fume.shared.Enttities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace fume.api.Controllers
 {
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("/api/cities")]
+
     public class CitiesController : ControllerBase
     {
         private readonly DataContext _context;

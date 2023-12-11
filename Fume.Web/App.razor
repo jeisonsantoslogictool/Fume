@@ -1,6 +1,25 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿@inject SweetAlertService Sweetalertservice
+@page "/ruta-restringida"
+
+
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"> 
+          <Authorizing>
+              <p>Autorizando... </p>
+          </Authorizing>
+
+          <NotAuthorized>
+               <p class="Error">Lo Siento!!... No estás autorizado</p>
+    
+              @{
+                 var mensajeError = "No estás autorizado";
+                 
+                 Sweetalertservice.FireAsync("", mensajeError, SweetAlertIcon.Error);
+                 }
+          </NotAuthorized>
+
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>

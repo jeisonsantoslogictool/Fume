@@ -2,6 +2,7 @@
 @inject IRepository repository
 @inject NavigationManager navigationmanager
 @inject SweetAlertService sweetalertservice
+@attribute [Authorize(Roles = "Admin")]
 
 <h3>Detalles del Estado</h3>
 
