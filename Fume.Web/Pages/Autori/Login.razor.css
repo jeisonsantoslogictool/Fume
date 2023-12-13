@@ -1,0 +1,22 @@
+﻿@keyframes wawes {
+    from {
+        transform: rotate(0);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.wawes-animation {
+    animation: wawes 6s infinite linear;
+}
+
+.wawes-after-animation {
+    animation: wawes 7s infinite;
+}
+
+body {
+    background-color: rgba(244, 91, 105, 1);
+    font-family: "Asap", sans-serif;
+}

@@ -32,7 +32,7 @@ namespace fume.shared.Enttities
         public string Address { get; set; } = null!;
 
         [Display(Name = "Foto")]
-        public string? Photo { get; set; }
+        public byte[]? Photo { get; set; }
 
         [Display(Name = "Tipo de usuario")]
         public UserType UserType { get; set; }

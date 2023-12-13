@@ -19,6 +19,13 @@ namespace fume.api.Controllers
             _Context = context;
         }
 
+        [AllowAnonymous]
+        [HttpGet("combo")]
+        public async Task<ActionResult> GetCombo()
+        {
+            return Ok(await _Context.Countries.ToListAsync());
+        }
+
         [HttpGet]
         public async Task<ActionResult> Get()
         {
