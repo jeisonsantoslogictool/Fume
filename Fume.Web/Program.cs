@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.Authorization;
 using Fume.Web.Auth;
+using Blazored.Modal;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -14,7 +15,7 @@ builder.Services.AddSingleton(sp => new HttpClient { BaseAddress = new Uri("http
 builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddSweetAlert2();
 builder.Services.AddAuthorizationCore();
-
+builder.Services.AddBlazoredModal();
 builder.Services.AddScoped<AutenticacionPro>();
 builder.Services.AddScoped<AuthenticationStateProvider, AutenticacionPro>(x => x.GetRequiredService<AutenticacionPro>());
 builder.Services.AddScoped<IloginService, AutenticacionPro>(x => x.GetRequiredService<AutenticacionPro>());

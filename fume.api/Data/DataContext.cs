@@ -18,6 +18,8 @@ namespace fume.api.Data
 
         public DbSet<City> Cities { get; set; }
 
+        public DbSet<Category> categories  { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -25,7 +27,7 @@ namespace fume.api.Data
             modelBuilder.Entity<Country>().HasIndex(X => X.Name).IsUnique();
             modelBuilder.Entity<City>().HasIndex("StateId", "Name").IsUnique();
             modelBuilder.Entity<State>().HasIndex("CountryId", "Name").IsUnique();
-
+            modelBuilder.Entity<Category>().HasIndex(x => x.Name).IsUnique();
         }
     }
 }

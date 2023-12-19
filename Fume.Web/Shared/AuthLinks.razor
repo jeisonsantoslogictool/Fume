@@ -1,7 +1,7 @@
 ﻿<AuthorizeView>
     <Authorized>
         <div class="d-flex align-items-center">
-            <span class="me-2">Hola, @context.User.Identity!.Name</span>
+            Hola, <a href="EditUser" class="nav-link btn btn-link">@context.User.Identity!.Name</a>
 
             @if (!string.IsNullOrEmpty(photoUser))
             {
@@ -21,6 +21,7 @@
 
 @code {
     private string? photoUser;
+    private string? userId;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
@@ -30,9 +31,16 @@
         var authenticationState = await authenticationStateTask;
         var claims = authenticationState.User.Claims.ToList();
         var photoClaim = claims.FirstOrDefault(x => x.Type == "Photo");
+        var userIdClaim = claims.FirstOrDefault(x => x.Type == "sub");
+
         if (photoClaim is not null)
         {
             photoUser = photoClaim.Value;
+        }
+
+        if (userIdClaim is not null)
+        {
+            userId = userIdClaim.Value;
         }
     }
 }

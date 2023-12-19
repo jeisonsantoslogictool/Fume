@@ -1,4 +1,6 @@
 ﻿using fume.api.Data;
+using fume.api.Helpers;
+using fume.shared.DTOs;
 using fume.shared.Enttities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -27,12 +29,41 @@ namespace fume.api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult> Get()
+        public async Task<IActionResult> Get([FromQuery] PaginationDTO pagination)
         {
-            return Ok(await _Context.Countries
+
+            var queryable = _Context.Countries
                 .Include(x => x.States)
+                .AsQueryable();
+            if (!string.IsNullOrWhiteSpace(pagination.Filter))
+            {
+                queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
+            }
+
+
+            return Ok(await queryable
+                .OrderBy(x => x.Name)
+                .Paginate(pagination)
                 .ToListAsync());
+
+
         }
+        [HttpGet("totalPages")]
+        public async Task<ActionResult> GetPages([FromQuery] PaginationDTO pagination)
+        {
+            var queryable = _Context.Countries.AsQueryable();
+            double count = await queryable.CountAsync();
+            double totalPages = Math.Ceiling(count / pagination.RecordsNumber);
+            if (!string.IsNullOrWhiteSpace(pagination.Filter))
+            {
+                queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
+            }
+
+            return Ok(totalPages);
+        }
+
+
+
         [HttpGet("Full")]
         public async Task<ActionResult> GetFull()
         {

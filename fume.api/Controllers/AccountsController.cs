@@ -1,6 +1,8 @@
 ﻿using fume.api.Helpers;
 using fume.shared.DTOs;
 using fume.shared.Enttities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,12 +17,63 @@ namespace fume.api.Controllers
     {
         private readonly IUserHelper _userHelper;
         private readonly IConfiguration _configuration;
+        private readonly string _container;
 
         public AccountsController(IUserHelper userHelper, IConfiguration configuration)
         {
             _userHelper = userHelper;
             _configuration = configuration;
+            _container = "users";
         }
+
+        [HttpPut]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult> Put(User user)
+        {
+            try
+            {
+                if (user.Photo != null)
+                {
+                    var photoUser = Convert.ToBase64String(user.Photo);
+                    
+                }
+                
+
+                var currentUser = await _userHelper.GetUserAsync(user.Email!);
+                if (currentUser == null)
+                {
+                    return NotFound();
+                }
+
+                currentUser.Document = user.Document;
+                currentUser.FirstName = user.FirstName;
+                currentUser.LastName = user.LastName;
+                currentUser.Address = user.Address;
+                currentUser.PhoneNumber = user.PhoneNumber;
+                currentUser.Photo = user.Photo;
+                currentUser.CityId = user.CityId;
+
+                var result = await _userHelper.UpdateUserAsync(currentUser);
+                if (result.Succeeded)
+                {
+                    return NoContent();
+                }
+
+                return BadRequest(result.Errors.FirstOrDefault());
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("User/{email}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult> Get(string email)
+        {
+            return Ok(await _userHelper.GetUserAsync(email));
+        }
+
 
         [HttpPost("CreateUser")]
         public async Task<ActionResult> CreateUser([FromBody] UserDTO model)

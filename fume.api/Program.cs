@@ -53,8 +53,9 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<DataContext>(x => x.UseSqlServer("name=DockerConnection"));
 builder.Services.AddTransient<SeedBd>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
-
+builder.Services.AddScoped<IFileStorage, FIleStorage>();
 builder.Services.AddIdentity<User, IdentityRole>(x =>
+
 {
     x.User.RequireUniqueEmail = true;
     x.Password.RequireDigit = false;

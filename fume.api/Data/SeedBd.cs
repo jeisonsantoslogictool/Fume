@@ -20,9 +20,24 @@ namespace fume.api.Data
         {
             await _context.Database.EnsureCreatedAsync();
             await CheckCountriesAsync();
+            await CheckCategoriesAsync();
             await CheckRolesAsync();
             await CheckUserAsync("1010", "Juan", "Zuluaga", "zulu@yopmail.com", "322 311 4620", "Calle Luna Calle Sol", UserType.Admin);
 
+        }
+
+
+        private async Task CheckCategoriesAsync()
+        {
+            if(!_context.categories.Any())
+            {
+                _context.categories.Add(new Category { Name = "Extra" });
+                _context.categories.Add(new Category { Name = "Ultra" });
+                _context.categories.Add(new Category { Name = "Infinity" });
+                
+                await _context.SaveChangesAsync();
+
+            }
         }
 
         private async Task CheckRolesAsync()
