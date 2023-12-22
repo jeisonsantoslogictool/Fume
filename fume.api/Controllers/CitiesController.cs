@@ -1,12 +1,16 @@
 ﻿using fume.api.Data;
 using fume.shared.Enttities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace fume.api.Controllers
 {
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("/api/cities")]
+
     public class CitiesController : ControllerBase
     {
         private readonly DataContext _context;
@@ -15,7 +19,17 @@ namespace fume.api.Controllers
         {
             _context = context;
         }
-        
+
+        [AllowAnonymous]
+        [HttpGet("combo/{stateId:int}")]
+        public async Task<ActionResult> GetCombo(int stateId)
+        {
+            return Ok(await _context.Cities
+                .Where(x => x.StateId == stateId)
+                .ToListAsync());
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> GetAsync()
         {

@@ -7,9 +7,16 @@ namespace Fume.Web.Auth
     {
         public async override Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            await Task.Delay(3000);
             var anonimous = new ClaimsIdentity();
-            return await Task.FromResult(new AuthenticationState(new ClaimsPrincipal(anonimous)));
+            var jei = new ClaimsIdentity(new List<Claim>
+            {
+                new Claim("FirstName", "Juan"),
+                new Claim ("LastName", "Zulu"),
+                new Claim(ClaimTypes.Name, "jei@yopmail.com"),
+                new Claim(ClaimTypes.Role, "Admin")
+            },                                
+            authenticationType: "test");
+            return await Task.FromResult(new AuthenticationState(new ClaimsPrincipal(jei)));
         }
     }
 }

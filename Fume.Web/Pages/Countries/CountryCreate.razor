@@ -2,6 +2,7 @@
 @inject IRepository repository
 @inject NavigationManager navegationManager
 @inject SweetAlertService Sweetalertservice
+@attribute [Authorize(Roles = "Admin")]
 
 <h3>Crear Pais</h3>
 <CountryForm @ref="contryForm" country="country" OnValidSubmit="Create" ReturnAction="Return" />
