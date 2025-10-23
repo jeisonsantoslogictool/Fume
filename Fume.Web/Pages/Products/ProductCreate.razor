@@ -12,6 +12,7 @@ else
 {
     <ProductForm @ref="productForm" ProductDTO="productDTO" NonSelectedCategories="nonSelectedCategories" OnValidSubmit="CreateAsync" ReturnAction="Return" />
 }
+ 
 
 @code {
     private ProductDTO productDTO = new ProductDTO
@@ -25,19 +26,23 @@ else
     private List<Category> nonSelectedCategories = new();
     private bool loading = true;
 
-    protected async override Task OnInitializedAsync()
+    protected async override Task OnAfterRenderAsync(bool render)
     {
-        var httpResponse = await repository.Get<List<Category>>("/api/categories");
-        loading = false;
-
-        if (httpResponse.Error)
+        if (render)
         {
-            var message = await httpResponse.GetErrorMessageAsync();
-            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-            return;
-        }
+            var httpResponse = await repository.Get<List<Category>>("/api/categories");
+            loading = false;
 
-        nonSelectedCategories = httpResponse.Response!;
+            if (httpResponse.Error)
+            {
+                var message = await httpResponse.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                return;
+            }
+
+            nonSelectedCategories = httpResponse.Response!;
+        }
+      
     }
 
     private async Task CreateAsync()

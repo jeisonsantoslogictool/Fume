@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "fume.api", "fume.api\fume.a
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fume.Web", "Fume.Web\Fume.Web.csproj", "{882B1624-070A-4ECD-9882-EF35D241F8AB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fume.Mobile", "Fume.Movile\Fume.Mobile.csproj", "{98501AAE-BED0-4658-BE42-9CE4E8809A4E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,12 +27,6 @@ Global
 		{882B1624-070A-4ECD-9882-EF35D241F8AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{882B1624-070A-4ECD-9882-EF35D241F8AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{882B1624-070A-4ECD-9882-EF35D241F8AB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{98501AAE-BED0-4658-BE42-9CE4E8809A4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{98501AAE-BED0-4658-BE42-9CE4E8809A4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{98501AAE-BED0-4658-BE42-9CE4E8809A4E}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{98501AAE-BED0-4658-BE42-9CE4E8809A4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{98501AAE-BED0-4658-BE42-9CE4E8809A4E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{98501AAE-BED0-4658-BE42-9CE4E8809A4E}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

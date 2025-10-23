@@ -2,6 +2,7 @@
 using fume.api.Helpers;
 using fume.shared.DTOs;
 using fume.shared.Enttities;
+using fume.shared.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,7 +46,7 @@ namespace fume.api.Controllers
         {
             var queryable = _context.categories
                 .AsQueryable();
-
+            
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
             {
                 queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
