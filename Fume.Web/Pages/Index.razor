@@ -8,11 +8,75 @@
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        border: 1px solid lightgray;
-        box-shadow: 2px 2px 8px 4px #d3d3d3d1;
-        border-radius: 15px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
         font-family: sans-serif;
-        margin: 5px;
+        margin: 10px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        transform: translateY(-5px);
+    }
+
+    .zoom {
+        overflow: hidden;
+        background-color: #f8f9fa;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .zoom img {
+        transition: transform 0.3s ease;
+        object-fit: contain;
+    }
+
+    .card:hover .zoom img {
+        transform: scale(1.1);
+    }
+
+    .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        min-height: 48px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .card-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+        min-height: 40px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .card-body {
+        padding: 15px;
+    }
+
+    .card-footer {
+        background-color: #fff;
+        border-top: 1px solid #e0e0e0;
+        padding: 15px;
+    }
+
+    .price-tag {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #27ae60;
+        margin: 10px 0;
     }
 </style>
 
@@ -50,12 +114,20 @@ else
             <div class="col">
                 <div class="card h-100">
                     <div class="text-center zoom">
-                        <img src="@product.MainImage" style="height:150px; max-width:200px;" class="text-center" alt=@product.Name />
+                        @if (product.ProductImages != null && product.ProductImages.Any())
+                        {
+                            var firstImage = Convert.ToBase64String(product.ProductImages.First().Imagefile);
+                            <img src="data:image/png;base64,@firstImage" style="height:150px; max-width:200px;" class="text-center" alt=@product.Name />
+                        }
+                        else
+                        {
+                            <img src="/images/no-image.png" style="height:150px; max-width:200px;" class="text-center" alt="Sin imagen" />
+                        }
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title text-navy"> @product.Name</h5>
-                        <p class="card-text smfnt">@product.Description</p>
-                        <h5 class="text-muted">@($"{product.Price:C2}")</h5>
+                        <h5 class="card-title">@product.Name</h5>
+                        <p class="card-text">@product.Description</p>
+                        <div class="price-tag">@($"{product.Price:C2}")</div>
                     </div>
                     <div class="card-footer text-center">
                         <a href="/orders/details/@product.Id" class="btn btn-sm btn-secondary"><i class="oi oi-info" /> Detalles</a>

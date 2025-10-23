@@ -48,6 +48,11 @@ namespace fume.shared.Enttities
         [Display(Name = "Imagén")]
         public string MainImage => ProductImages == null || !ProductImages.Any() ? string.Empty : Convert.ToBase64String(ProductImages.First().Imagefile);
 
+        [Display(Name = "Imágenes Base64")]
+        public List<string> ProductImagesString => ProductImages == null || !ProductImages.Any()
+            ? new List<string>()
+            : ProductImages.Select(x => Convert.ToBase64String(x.Imagefile)).ToList();
+
 
 
 

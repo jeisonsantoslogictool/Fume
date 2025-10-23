@@ -28,21 +28,21 @@ else
 
     protected async override Task OnAfterRenderAsync(bool render)
     {
-        if (render)
+
+        var httpResponse = await repository.Get<List<Category>>("/api/categories");
+
+
+        if (httpResponse.Error)
         {
-            var httpResponse = await repository.Get<List<Category>>("/api/categories");
-            loading = false;
-
-            if (httpResponse.Error)
-            {
-                var message = await httpResponse.GetErrorMessageAsync();
-                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-                return;
-            }
-
-            nonSelectedCategories = httpResponse.Response!;
+            var message = await httpResponse.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
         }
-      
+
+        nonSelectedCategories = httpResponse.Response!;
+        loading = false;
+        StateHasChanged();
+
     }
 
     private async Task CreateAsync()

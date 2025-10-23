@@ -27,7 +27,7 @@ namespace fume.api.Controllers
         }
 
         [HttpPut]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [AllowAnonymous]
         public async Task<ActionResult> Put(User user)
         {
             try

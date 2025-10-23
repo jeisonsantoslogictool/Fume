@@ -4,20 +4,20 @@
 @inject SweetAlertService sweetAlertService
 @attribute [Authorize(Roles = "Admin")]
 
+
 @if (Products is null)
 {
     <div class="spinner" />
-
 }
 else
 {
-    <GenerecList Mylist="Products">
+    <GenerecList MyList="Products">
         <Body>
             <div class="card">
                 <div class="card-header">
                     <span>
-                        <i class="oi oi-star"/> Productos
-                        <a class="btn btn-sm btn-primary float-end" href="/products/create"><i class="oi oi-plus"/> Nuevo Producto</a>
+                        <i class="oi oi-star" /> Productos
+                        <a class="btn btn-sm btn-primary float-end" href="/products/create"><i class="oi oi-plus" /> Nuevo Producto</a>
                     </span>
                 </div>
                 <div class="card-body">
@@ -73,12 +73,11 @@ else
                                     <td>
                                         @if (product.ProductImages != null && product.ProductImages.Any())
                                         {
-                                            var firstImage = product.ProductImages.First();
-                                            <img src="@($"data:image/png;base64,{Convert.ToBase64String(firstImage.Imagefile)}")" style="width:100px;" />
-                                        }
-                                        else
-                                        {
-                                            <span>No hay imagen</span>
+                                            @foreach (var image in product.ProductImages)
+                                            {
+                                                var imageBase64 = Convert.ToBase64String(image.Imagefile);
+                                                <img src="data:image/png;base64,@imageBase64" style="width:50px; height:50px; object-fit:cover; margin:2px; border-radius:4px;" />
+                                            }
                                         }
                                     </td>
                                     <td>
