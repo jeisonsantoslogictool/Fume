@@ -2,6 +2,16 @@
     <label>@Label</label>
     <div>
         <InputFile OnChange="OnChange" accept=".jpg,.jpeg,.png" />
+
+        <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
+            <ActivatorContent>
+                <MudIconButton Color="Color.Info"
+                      Icon="@Icons.Material.Filled.PhotoCamera">
+              </MudIconButton>
+            </ActivatorContent>
+       </MudFileUpload>
+
+
     </div>
 </div>
 
@@ -30,7 +40,19 @@
     [Parameter] public string? ImageURL { get; set; }
     [Parameter] public EventCallback<string> ImageSelected { get; set; }
     private string? imageBase64;
+    IList<IBrowserFile> _files = new List<IBrowserFile>();
+    private async Task UploadFiles(IBrowserFile file)
+    {
+        _files.Add(file);
+        var imagen = file;
 
+        var arrBytes = new byte[imagen.Size];
+        await imagen.OpenReadStream(maxAllowedSize: 1024 * 1024 * 10).ReadAsync(arrBytes);
+        imageBase64 = Convert.ToBase64String(arrBytes);
+        ImageURL = null;
+        await ImageSelected.InvokeAsync(imageBase64);
+        StateHasChanged();
+    }
     async Task OnChange(InputFileChangeEventArgs e)
     {
         var imagenes = e.GetMultipleFiles();
@@ -38,7 +60,7 @@
         foreach (var imagen in imagenes)
         {
             var arrBytes = new byte[imagen.Size];
-            await imagen.OpenReadStream().ReadAsync(arrBytes);
+            await imagen.OpenReadStream(maxAllowedSize: 1024 * 1024 * 10).ReadAsync(arrBytes);
             imageBase64 = Convert.ToBase64String(arrBytes);
             ImageURL = null;
             await ImageSelected.InvokeAsync(imageBase64);

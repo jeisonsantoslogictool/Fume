@@ -2,9 +2,98 @@
 @inject IRepository repository
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
-@inject IModalService modal
+@inject IModalService Modal
+@inject IJSRuntime JS
 @attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Components.Web
 
+<style>
+    .dialog-backdrop-blur {
+        backdrop-filter: blur(8px);
+        background-color: rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .categories-header {
+        background: linear-gradient(135deg, #2196f3 0%, #fff 100%);
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .categories-title {
+        color: white;
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .search-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+
+    .category-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e3f2fd;
+        transition: all 0.3s ease;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+
+    .category-card:hover {
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+        transform: translateY(-3px);
+        border-color: #667eea;
+    }
+
+    .category-name {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #2c3e50;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .category-icon {
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, #2196f3 0%, #fff 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+
+    .category-actions {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #e3f2fd;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .stats-badge {
+        background: #e3f2fd;
+        color: #1976d2;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+</style>
 
 @if (categories is null)
 {
@@ -12,68 +101,201 @@
 }
 else
 {
-    <GenerecList Mylist="categories">
-        <Body>
-            <div class="card">
-                <div class="card-header">
-                    <span>
-                        <i class="oi oi-list"></i> Categorías
-                        <a class="btn btn-sm btn-primary float-end" @onclick=@(() => ShowModal())><i class="oi oi-plus"></i> Adicionar Categoría</a>
-                    </span>
-                </div>
-                <div class="card-body">
-                    <div class="mb-2" style="display: flex; flex-wrap:wrap; align-items: center;">
-                        <div>
-                            <input style="width: 400px;" type="text" class="form-control" id="titulo" placeholder="Buscar categoría..." @bind-value="Filter" />
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge">
+        <!-- Header -->
+        <div class="categories-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="categories-title">
+                    <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" />
+                    Gestión de Categorías
+                </h1>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Size="Size.Large"
+                           OnClick="@(() => ShowModal())"
+                           Style="background-color: white; color: #667eea; font-weight: 600;">
+                    Nueva Categoría
+                </MudButton>
+               
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#kt_modal_stacked_1">
+                    Prueba metronic
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-card">
+            <MudGrid Spacing="3" Justify="Justify.SpaceBetween">
+                <MudItem xs="12" md="8">
+                    <MudTextField @bind-Value="Filter"
+                                  Label="Buscar categorías"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  FullWidth="true"
+                                  OnKeyUp="HandleKeyPress"
+                                  Placeholder="Ingrese el nombre de la categoría..." />
+                </MudItem>
+                <MudItem xs="12" md="4" Class="d-flex align-items-center gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.FilterList"
+                               FullWidth="true"
+                               OnClick="ApplyFilterAsync">
+                        Filtrar
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Clear"
+                               FullWidth="true"
+                               OnClick="CleanFilterAsync">
+                        Limpiar
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </div>
+
+        <!-- Categories Grid -->
+        <MudGrid>
+            @foreach (var category in categories)
+            {
+                <MudItem xs="12" md="6" lg="4">
+                    <div class="category-card">
+                        <div class="category-name">
+                            @if (category.Image != null && category.Image.Length > 0)
+                            {
+                                <img src="data:image/png;base64,@category.ImageString"
+                                     style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover;"
+                                     alt="@category.Name" />
+                            }
+                            else
+                            {
+                                <div class="category-icon">
+                                    <MudIcon Icon="@Icons.Material.Filled.Label" />
+                                </div>
+                            }
+                            <div style="flex: 1;">
+                                <div>@category.Name</div>
+                                <span class="stats-badge">@category.ProductCategoriesNumber Productos</span>
+                            </div>
                         </div>
-                        <div class="mx-1">
-                            <button type="button" class="btn btn-outline-primary" @onclick="ApplyFilterAsync"><i class="oi oi-layers" /> Filtrar</button>
-                            <button type="button" class="btn btn-outline-danger" @onclick="CleanFilterAsync"><i class="oi oi-ban" /> Limpiar</button>
+                        <div class="category-actions">
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Warning"
+                                       StartIcon="@Icons.Material.Filled.Edit"
+                                       Size="Size.Small"
+                                       OnClick="@(() => ShowModal(category.Id, true))">
+                                Editar
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Error"
+                                       StartIcon="@Icons.Material.Filled.Delete"
+                                       Size="Size.Small"
+                                       OnClick="@(() => Delete(category.Id))">
+                                Eliminar
+                            </MudButton>
                         </div>
                     </div>
+                </MudItem>
+            }
+        </MudGrid>
 
+        <!-- Pagination -->
+        <div class="mt-4 d-flex justify-content-center">
+            <Pagination CurrentPage="currentPage"
+                        TotalPages="totalPages"
+                        SelectedPage="SelectedPageAsync" />
+        </div>
+        <div class="modal fade" tabindex="-1" id="kt_modal_stacked_1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Modal title</h3>
 
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Categoría</th>
-                                <th style="width:200px"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var category in categories)
-                            {
-                                <tr>
-                                    <td>
-                                        @category.Name
-                                    </td>
-                                    <td>
-                                        <a @onclick=@(() => ShowModal(category.Id, true)) class="btn btn-warning"><i class="oi oi-pencil" /> Editar</a>
-                                        <button class="btn btn-danger" @onclick=@(() => Delete(category.Id))><i class="oi oi-trash" /> Borrar</button>
-                                    </td>
-                                </tr>
-                            }
+                        <!--begin::Close-->
+                        <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                            <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                        </div>
+                        <!--end::Close-->
+                    </div>
 
+                    <div class="modal-body">
+                        ...
 
-                            <Pagination CurrentPage="currentPage"
-                                    TotalPages="totalPages"
-                                    SelectedPage="SelectedPageAsync" />
-                        </tbody>
-                    </table>
+                        <button type="button" class="btn btn-primary" data-bs-stacked-modal="#kt_modal_stacked_2">
+                            Launch stacked modal
+                        </button>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary">Save changes</button>
+                    </div>
                 </div>
             </div>
-        </Body>
-    </GenerecList>
+        </div>
+
+        <div class="modal fade" tabindex="-1" id="kt_modal_stacked_2">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Stacked modal title</h3>
+
+                        <!--begin::Close-->
+                        <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                            <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                        </div>
+                        <!--end::Close-->
+                    </div>
+
+                    <div class="modal-body">
+                        ...
+
+                        <button type="button" class="btn btn-primary" data-bs-stacked-modal="#kt_modal_stacked_3">
+                            Launch stacked modal
+                        </button>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" tabindex="-1" id="kt_modal_stacked_3" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Stacked modal title</h3>
+
+                        <!--begin::Close-->
+                        <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                            <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                        </div>
+                        <!--end::Close-->
+                    </div>
+
+                    <div class="modal-body">
+                        ...
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </MudContainer>
 }
 
 @code {
     public List<Category>? categories { get; set; }
     private int currentPage = 1;
     private int totalPages;
-
-    [CascadingParameter]
-    IModalService Modal { get; set; } = default!;
-
 
     [Parameter]
     [SupplyParameterFromQuery]
@@ -94,7 +316,8 @@ else
 
         if (isEdit)
         {
-            modalReference = Modal.Show<CategoryEdit>(string.Empty, new ModalParameters().Add("CategoryId", id));
+            var parameters = new ModalParameters().Add("CategoryId", id);
+            modalReference = Modal.Show<CategoryEdit>(string.Empty, parameters);
         }
         else
         {
@@ -197,4 +420,38 @@ else
         await LoadAsync(page);
         await SelectedPageAsync(page);
     }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyFilterAsync();
+        }
+    }
 }
+
+<script>
+    var elements = Array.prototype.slice.call(document.querySelectorAll("[data-bs-stacked-modal]"));
+
+    if (elements && elements.length > 0) {
+        elements.forEach((element) => {
+            if (element.getAttribute("data-kt-initialized") === "1") {
+                return;
+            }
+
+            element.setAttribute("data-kt-initialized", "1");
+
+            element.addEventListener("click", function(e) {
+                e.preventDefault();
+
+                const modalEl = document.querySelector(this.getAttribute("data-bs-stacked-modal"));
+
+                if (modalEl) {
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            });
+        });
+    }
+
+</script>

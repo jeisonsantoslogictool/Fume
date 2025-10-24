@@ -2,8 +2,127 @@
 @inject IRepository repository
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
-
+@using Microsoft.AspNetCore.Components.Web
+@inherits LayoutComponentBase
+@layout MainLayout
+@using MudBlazor
 <style type="text/css">
+    /* Header Section */
+    .header-section {
+        background-color: #fff;
+        padding: 20px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .logo-section img {
+        height: 60px;
+        cursor: pointer;
+    }
+
+    .search-section {
+        flex-grow: 1;
+        max-width: 600px;
+        margin: 0 40px;
+    }
+
+    .smart-search {
+        position: relative;
+        width: 100%;
+    }
+
+    .smart-search input {
+        width: 100%;
+        padding: 12px 50px 12px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 25px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .smart-search input:focus {
+        outline: none;
+        border-color: #25b09b;
+        box-shadow: 0 0 10px rgba(37, 176, 155, 0.2);
+    }
+
+    .smart-search button {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+            background-color: #1b70b3;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 20px;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .smart-search button:hover {
+        background-color: #1e9382;
+    }
+
+    .cart-section {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    /* Banner Section */
+    .banner-section {
+        width: 100%;
+        height: 400px;
+        background-image: url('/Fullfondo.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        margin-bottom: 40px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .banner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .banner-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        color: white;
+    }
+
+    .banner-content h1 {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .banner-content p {
+        font-size: 1.5rem;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    /* Product Cards */
     .card {
         display: flex;
         flex-direction: column;
@@ -78,7 +197,85 @@
         color: #27ae60;
         margin: 10px 0;
     }
+
+    @@media (max-width: 768px) {
+        .header-container {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .search-section {
+            margin: 0;
+            width: 100%;
+        }
+
+        .banner-section {
+            height: 250px;
+        }
+
+        .banner-content h1 {
+            font-size: 2rem;
+        }
+
+        .banner-content p {
+            font-size: 1rem;
+        }
+    }
 </style>
+
+<!-- Header Section -->
+<div class="header-section">
+    <div class="header-container">
+        <div class="logo-section">
+            <img src="/Logo.png" alt="Fume Logo" @onclick="@(() => navigationManager.NavigateTo("/"))" />
+        </div>
+
+        <div class="search-section">
+            <div class="smart-search">
+                <input type="text"
+                       placeholder="Buscar productos, marcas o categorías..."
+                       @bind-value="Filter"
+                       @onkeyup="HandleKeyPress" />
+                <button @onclick="ApplyFilterAsync">
+                    <i class="oi oi-magnifying-glass"></i> Buscar
+                </button>
+            </div>
+        </div>
+
+        <div class="cart-section">
+            <AuthorizeView>
+                <Authorized>
+                    @if (counter > 0)
+                    {
+                        <a href="/Orders/ShowCart" class="btn btn-primary">
+                            <i class="oi oi-cart"></i> Carrito (@counter)
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="/Orders/ShowCart" class="btn btn-outline-primary">
+                            <i class="oi oi-cart"></i> Carrito
+                        </a>
+                    }
+                </Authorized>
+                <NotAuthorized>
+                    <button class="btn btn-outline-primary" @onclick="@(() => navigationManager.NavigateTo("/Login"))">
+                        <i class="oi oi-account-login"></i> Iniciar Sesión
+                    </button>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</div>
+
+<!-- Banner Section -->
+<div class="banner-section">
+    <div class="banner-overlay"></div>
+    <div class="banner-content">
+        <h1>Bienvenido a IT Plus</h1>
+        <p>Encuentra los mejores productos al mejor precio</p>
+    </div>
+</div>
 
 @if (Products is null)
 {
@@ -86,27 +283,20 @@
 }
 else
 {
-    <div class="mb-2" style="display: flex; flex-wrap:wrap; align-items: center;">
-        <div>
-            <input style="width: 400px;" type="text" class="form-control" id="titulo" placeholder="Buscar producto..." @bind-value="Filter" />
+    <div class="container">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <h2>Nuestros Productos</h2>
+            @if (!string.IsNullOrEmpty(Filter))
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="CleanFilterAsync">
+                    <i class="oi oi-x" /> Limpiar búsqueda
+                </button>
+            }
         </div>
-        <div class="mx-1">
-            <button type="button" class="btn btn-outline-primary" @onclick="ApplyFilterAsync"><i class="oi oi-layers" /> Filtrar</button>
-            <button type="button" class="btn btn-outline-danger" @onclick="CleanFilterAsync"><i class="oi oi-ban" /> Limpiar</button>
-        </div>
-        <AuthorizeView>
-            <Authorized>
-                @if (counter > 0)
-                {
-                    <a href="/Orders/ShowCart" class="btn btn-primary">Ver Carro de Compras (@counter)</a>
-                }
-            </Authorized>
-        </AuthorizeView>
-    </div>
 
-    <Pagination CurrentPage="currentPage"
-                TotalPages="totalPages"
-                SelectedPage="SelectedPageAsync" />
+        <Pagination CurrentPage="currentPage"
+                    TotalPages="totalPages"
+                    SelectedPage="SelectedPageAsync" />
 
     <div class="row row-cols-1 row-cols-md-4 g-4 mt-1">
         @foreach (var product in Products!)
@@ -136,6 +326,7 @@ else
                 </div>
             </div>
         }
+    </div>
     </div>
 }
 
@@ -243,6 +434,14 @@ else
         int page = 1;
         await LoadAsync(page);
         await SelectedPageAsync(page);
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyFilterAsync();
+        }
     }
 
     private async Task AddToCartAsync(int productId)

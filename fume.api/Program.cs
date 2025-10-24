@@ -8,8 +8,17 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configurar compresión para archivos estáticos de Blazor
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream", "application/wasm" });
+    opts.EnableForHttps = true;
+});
 
 // Add services to the container.
 
@@ -104,6 +113,7 @@ void SeedeDataDb(WebApplication app)
         app.UseSwaggerUI();
   }
 
+    app.UseResponseCompression();
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();

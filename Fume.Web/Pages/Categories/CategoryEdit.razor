@@ -1,27 +1,311 @@
-﻿@page "/categories/edit/{CategoryId:int}"
 @inject IRepository repository
-@inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
+@inject IJSRuntime JSRuntime
+<style>
+    .custom-modal {
+        max-width: 900px;
+        width: 90%;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        background: white;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+    }
 
-<h3>Editar categoría</h3>
+    .modal-header-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 24px;
+        color: white;
+    }
 
-@if (category is null)
-{
-    <div class="spinner" />
-}
-else
-{
-    <CategoryForm @ref="categoryForm" Category="category" OnValidSubmit="EditAsync" ReturnAction="Return" />
-}
+    .modal-title-custom {
+        font-size: 1.5rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+    }
+
+    .modal-body-custom {
+        padding: 24px;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .modal-content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .modal-footer-custom {
+        padding: 16px 24px;
+        background-color: #f5f5f5;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .upload-area {
+        border: 2px dashed #e0e0e0;
+        border-radius: 12px;
+        background-color: #fafafa;
+        padding: 24px;
+        text-align: center;
+    }
+
+    .upload-button {
+        display: inline-block;
+        padding: 12px 24px;
+        background: #667eea;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .upload-button:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+    }
+
+    .image-preview-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 16px;
+        background-color: #fafafa;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+    }
+
+    .image-preview-container img {
+        max-width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+
+    .no-image-placeholder {
+        color: #999;
+        text-align: center;
+        padding: 40px;
+    }
+
+    @@media (max-width: 768px) {
+        .modal-content-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .custom-modal {
+            width: 95%;
+            max-width: 95%;
+        }
+    }
+</style>
+
+<script>
+    // Metronic-style Modal Functionality
+    window.CategoryEditModalJS = {
+        init: function () {
+            const modal = document.querySelector('.custom-modal');
+            if (!modal) return;
+
+            // Animación de entrada
+            modal.style.opacity = '0';
+            modal.style.transform = 'translate(-50%, -48%)';
+            setTimeout(() => {
+                modal.style.transition = 'all 0.3s ease';
+                modal.style.opacity = '1';
+                modal.style.transform = 'translate(-50%, -50%)';
+            }, 10);
+
+            // Preview de imagen con drag & drop
+            this.initDragDrop();
+
+            // Validación en tiempo real
+            this.initValidation();
+        },
+
+        initDragDrop: function () {
+            const uploadArea = document.querySelector('.upload-area');
+            if (!uploadArea) return;
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.style.borderColor = '#667eea';
+                    uploadArea.style.backgroundColor = '#f0f0ff';
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
+                    uploadArea.style.borderColor = '#e0e0e0';
+                    uploadArea.style.backgroundColor = '#fafafa';
+                }, false);
+            });
+
+            uploadArea.addEventListener('drop', function (e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    const fileInput = document.getElementById('fileInputEdit');
+                    if (fileInput) {
+                        fileInput.files = files;
+                        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            }, false);
+        },
+
+        initValidation: function () {
+            const nameInput = document.querySelector('input[type="text"]');
+            if (!nameInput) return;
+
+            nameInput.addEventListener('input', function () {
+                if (this.value.length > 0) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+        },
+
+        animateOut: function () {
+            const modal = document.querySelector('.custom-modal');
+            if (modal) {
+                modal.style.opacity = '0';
+                modal.style.transform = 'translate(-50%, -48%)';
+            }
+            return new Promise(resolve => setTimeout(resolve, 300));
+        }
+    };
+
+    // Inicializar cuando el modal se carga
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(() => CategoryEditModalJS.init(), 100);
+    });
+</script>
+
+<div class="custom-modal">
+    <div class="modal-header-custom">
+        <h3 class="modal-title-custom">
+            <i class="oi oi-pencil"></i>
+            Editar Categoría
+        </h3>
+    </div>
+
+    <div class="modal-body-custom">
+        @if (category is null)
+        {
+            <div class="spinner" />
+        }
+        else
+        {
+            <EditForm Model="@category" OnValidSubmit="EditAsync">
+                <DataAnnotationsValidator />
+
+                <div class="modal-content-grid">
+                    <!-- Columna Izquierda: Formulario -->
+                    <div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nombre de la Categoría</label>
+                            <InputText class="form-control form-control-lg"
+                                       @bind-Value="category.Name"
+                                       placeholder="Ingrese el nombre de la categoría" />
+                            <ValidationMessage For="@(() => category.Name)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Imagen de la Categoría</label>
+                            <div class="upload-area">
+                                <InputFile OnChange="OnFileSelected"
+                                           accept=".png,.jpg,.jpeg"
+                                           id="fileInputEdit"
+                                           style="display: none;" />
+
+                                <label for="fileInputEdit" class="upload-button">
+                                    <i class="oi oi-cloud-upload"></i> Cambiar Imagen
+                                </label>
+
+                                <p class="text-muted mt-3 mb-0" style="font-size: 0.875rem;">
+                                    Formatos: PNG, JPG, JPEG (Máx. 10MB)
+                                </p>
+
+                                @if (!string.IsNullOrEmpty(fileName))
+                                {
+                                    <div class="mt-3">
+                                        <span class="badge bg-success" style="font-size: 0.9rem; padding: 8px 12px;">
+                                            <i class="oi oi-check"></i> @fileName
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha: Vista Previa -->
+                    <div>
+                        <label class="form-label fw-bold">Vista Previa</label>
+                        <div class="image-preview-container">
+                            @if (!string.IsNullOrEmpty(imageUrl))
+                            {
+                                <img src="data:image/png;base64,@imageUrl" alt="Preview" />
+                            }
+                            else
+                            {
+                                <div class="no-image-placeholder">
+                                    <i class="oi oi-image" style="font-size: 4rem; opacity: 0.3;"></i>
+                                    <p class="mt-3">No hay imagen seleccionada</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </EditForm>
+        }
+    </div>
+
+    <div class="modal-footer-custom">
+        <button type="button" class="btn btn-lg btn-secondary" @onclick="Cancel">
+            Cancelar
+        </button>
+        <button type="button"
+                class="btn btn-lg btn-primary"
+                @onclick="EditAsync"
+                disabled="@(category is null)">
+            <i class="oi oi-check"></i> Actualizar Categoría
+        </button>
+    </div>
+</div>
 
 @code {
     private Category? category;
-    private CategoryForm? categoryForm;
+    private string? imageUrl;
+    private string? fileName;
+    private bool isLoading = false;
 
     [CascadingParameter]
     BlazoredModalInstance BlazoredModal { get; set; } = default!;
-
-
 
     [Parameter]
     public int CategoryId { get; set; }
@@ -33,7 +317,8 @@ else
         {
             if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
             {
-                navigationManager.NavigateTo("/categories");
+                await sweetAlertService.FireAsync("Error", "Categoría no encontrada", SweetAlertIcon.Error);
+                await BlazoredModal.CancelAsync();
                 return;
             }
 
@@ -43,24 +328,110 @@ else
         }
 
         category = responseHttp.Response;
+
+        // Cargar imagen existente si hay una
+        if (category?.Image != null && category.Image.Length > 0)
+        {
+            imageUrl = Convert.ToBase64String(category.Image);
+            fileName = "Imagen actual";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "CategoryEditModalJS.init()");
+        }
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null && category != null)
+        {
+            // Validar tamaño
+            if (file.Size > 10 * 1024 * 1024)
+            {
+                await sweetAlertService.FireAsync("Error", "El archivo es demasiado grande. Máximo 10MB.", SweetAlertIcon.Error);
+                return;
+            }
+
+            // Validar tipo
+            var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+            if (!allowedTypes.Contains(file.ContentType))
+            {
+                await sweetAlertService.FireAsync("Error", "Formato no permitido. Solo PNG, JPG o JPEG.", SweetAlertIcon.Error);
+                return;
+            }
+
+            fileName = file.Name;
+            isLoading = true;
+            StateHasChanged();
+
+            try
+            {
+                // Leer el archivo
+                var buffer = new byte[file.Size];
+                await file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 10).ReadAsync(buffer);
+
+                // Convertir a Base64
+                imageUrl = Convert.ToBase64String(buffer);
+                category.Image = buffer;
+            }
+            catch (Exception ex)
+            {
+                await sweetAlertService.FireAsync("Error", $"Error al cargar la imagen: {ex.Message}", SweetAlertIcon.Error);
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
     }
 
     private async Task EditAsync()
     {
-        var responseHttp = await repository.Put("/api/categories", category);
-        if (responseHttp.Error)
+        if (category is null || string.IsNullOrWhiteSpace(category.Name))
         {
-            var message = await responseHttp.GetErrorMessageAsync();
-            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            await sweetAlertService.FireAsync("Error", "El nombre de la categoría es obligatorio.", SweetAlertIcon.Error);
             return;
         }
-        await BlazoredModal.CloseAsync(ModalResult.Ok());
-        Return();
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var responseHttp = await repository.Put("/api/categories", category);
+            if (responseHttp.Error)
+            {
+                var message = await responseHttp.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                return;
+            }
+
+            await sweetAlertService.FireAsync("Éxito", "Categoría actualizada exitosamente", SweetAlertIcon.Success);
+
+            // Animar salida
+            await JSRuntime.InvokeVoidAsync("eval", "CategoryEditModalJS.animateOut()");
+            await Task.Delay(300);
+
+            await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
-    private void Return()
+    private async Task Cancel()
     {
-        categoryForm!.FormPostedSuccessfully = true;
-        navigationManager.NavigateTo($"/categories");
+        // Animar salida
+        await JSRuntime.InvokeVoidAsync("eval", "CategoryEditModalJS.animateOut()");
+        await Task.Delay(300);
+        await BlazoredModal.CancelAsync();
     }
 }

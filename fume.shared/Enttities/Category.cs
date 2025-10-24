@@ -22,6 +22,12 @@ namespace fume.shared.Enttities
         [Display(Name = "Productos")]
         public int ProductCategoriesNumber => ProductCategories == null ? 0 : ProductCategories.Count;
 
+        [Display(Name = "Imagen")]
+        public byte[]? Image { get; set; }
+
+        [Display(Name = "Imagen")]
+        public string ImageString => Image == null || Image.Length == 0 ? string.Empty : Convert.ToBase64String(Image);
+
 
     }
 }
