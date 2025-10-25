@@ -25,7 +25,7 @@ namespace fume.shared.DTOs
         public string Description { get; set; } = null!;
 
         [Column(TypeName = "decimal(18,2)")]
-        [DisplayFormat(DataFormatString = "{0:C2}")]
+        [DisplayFormat(DataFormatString = "{0:C}")]
         [Display(Name = "Precio")]
         [Required(ErrorMessage = "El campo {0} es obligatorio.")]
         public decimal Price { get; set; }

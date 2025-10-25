@@ -4,6 +4,7 @@
 @inject SweetAlertService sweetAlertService
 @attribute [Authorize(Roles = "Admin")]
 @using Microsoft.AspNetCore.Components.Web
+@using Fume.Web.Helpers
 
 <style>
     .products-header {
@@ -255,7 +256,7 @@ else
                         <div class="product-info">
                             <div class="product-name">@product.Name</div>
                             <div class="product-description">@product.Description</div>
-                            <div class="product-price">@($"{product.Price:C2}")</div>
+                            <div class="product-price">@FormatHelper.FormatPrice(product.Price)</div>
                             <div class="product-stats">
                                 <span class="stats-badge">
                                     <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" />

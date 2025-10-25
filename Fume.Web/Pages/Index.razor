@@ -6,6 +6,7 @@
 @inherits LayoutComponentBase
 @layout MainLayout
 @using MudBlazor
+@using Fume.Web.Helpers
 <style type="text/css">
     /* Header Section */
     .header-section {
@@ -314,7 +315,7 @@ else
                     <div class="card-body">
                         <h5 class="card-title">@product.Name</h5>
                         <p class="card-text">@product.Description</p>
-                        <div class="price-tag">@($"{product.Price:C2}")</div>
+                        <div class="price-tag">@FormatHelper.FormatPrice(product.Price)</div>
                     </div>
                     <div class="card-footer text-center">
                         <a href="/orders/details/@product.Id" class="btn btn-sm btn-secondary"><i class="oi oi-info" /> Detalles</a>
