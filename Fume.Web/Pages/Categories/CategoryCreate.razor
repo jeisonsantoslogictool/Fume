@@ -1,54 +1,11 @@
 @inject IRepository repository
 @inject SweetAlertService sweetAlertService
-@inject IJSRuntime JSRuntime
+
 <style>
-    .custom-modal {
-        max-width: 900px;
-        width: 90%;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        background: white;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 1000;
-    }
-
-    .modal-header-custom {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 24px;
-        color: white;
-    }
-
-    .modal-title-custom {
-        font-size: 1.5rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0;
-    }
-
-    .modal-body-custom {
-        padding: 24px;
-        max-height: 70vh;
-        overflow-y: auto;
-    }
-
     .modal-content-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 24px;
-    }
-
-    .modal-footer-custom {
-        padding: 16px 24px;
-        background-color: #f5f5f5;
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
     }
 
     .upload-area {
@@ -57,6 +14,12 @@
         background-color: #fafafa;
         padding: 24px;
         text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .upload-area:hover {
+        border-color: #667eea;
+        background-color: #f0f0ff;
     }
 
     .upload-button {
@@ -68,6 +31,7 @@
         cursor: pointer;
         font-weight: 600;
         transition: all 0.3s;
+        border: none;
     }
 
     .upload-button:hover {
@@ -104,192 +68,70 @@
         .modal-content-grid {
             grid-template-columns: 1fr;
         }
-
-        .custom-modal {
-            width: 95%;
-            max-width: 95%;
-        }
     }
 </style>
 
-<div class="custom-modal">
-    <div class="modal-header-custom">
-        <h3 class="modal-title-custom">
-            <i class="oi oi-plus"></i>
-            Nueva Categoría
-        </h3>
-    </div>
+<EditForm Model="@category" OnValidSubmit="CreateAsync">
+    <DataAnnotationsValidator />
 
-    <div class="modal-body-custom">
-        <EditForm Model="@category" OnValidSubmit="CreateAsync">
-            <DataAnnotationsValidator />
+    <div class="modal-content-grid">
+        <!-- Columna Izquierda: Formulario -->
+        <div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Nombre de la Categoría</label>
+                <InputText class="form-control form-control-lg"
+                           @bind-Value="category.Name"
+                           placeholder="Ingrese el nombre de la categoría" />
+                <ValidationMessage For="@(() => category.Name)" />
+            </div>
 
-            <div class="modal-content-grid">
-                <!-- Columna Izquierda: Formulario -->
-                <div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nombre de la Categoría</label>
-                        <InputText class="form-control form-control-lg"
-                                   @bind-Value="category.Name"
-                                   placeholder="Ingrese el nombre de la categoría" />
-                        <ValidationMessage For="@(() => category.Name)" />
-                    </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Imagen de la Categoría</label>
+                <div class="upload-area">
+                    <InputFile OnChange="OnFileSelected"
+                               accept=".png,.jpg,.jpeg"
+                               id="fileInput"
+                               style="display: none;" />
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Imagen de la Categoría</label>
-                        <div class="upload-area">
-                            <InputFile OnChange="OnFileSelected"
-                                       accept=".png,.jpg,.jpeg"
-                                       id="fileInput"
-                                       style="display: none;" />
+                    <label for="fileInput" class="upload-button">
+                        <i class="oi oi-cloud-upload"></i> Seleccionar Imagen
+                    </label>
 
-                            <label for="fileInput" class="upload-button">
-                                <i class="oi oi-cloud-upload"></i> Seleccionar Imagen
-                            </label>
+                    <p class="text-muted mt-3 mb-0" style="font-size: 0.875rem;">
+                        Formatos: PNG, JPG, JPEG (Máx. 10MB)
+                    </p>
 
-                            <p class="text-muted mt-3 mb-0" style="font-size: 0.875rem;">
-                                Formatos: PNG, JPG, JPEG (Máx. 10MB)
-                            </p>
-
-                            @if (!string.IsNullOrEmpty(fileName))
-                            {
-                                <div class="mt-3">
-                                    <span class="badge bg-success" style="font-size: 0.9rem; padding: 8px 12px;">
-                                        <i class="oi oi-check"></i> @fileName
-                                    </span>
-                                </div>
-                            }
+                    @if (!string.IsNullOrEmpty(fileName))
+                    {
+                        <div class="mt-3">
+                            <span class="badge bg-success" style="font-size: 0.9rem; padding: 8px 12px;">
+                                <i class="oi oi-check"></i> @fileName
+                            </span>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Columna Derecha: Vista Previa -->
-                <div>
-                    <label class="form-label fw-bold">Vista Previa</label>
-                    <div class="image-preview-container">
-                        @if (!string.IsNullOrEmpty(imageUrl))
-                        {
-                            <img src="data:image/png;base64,@imageUrl" alt="Preview" />
-                        }
-                        else
-                        {
-                            <div class="no-image-placeholder">
-                                <i class="oi oi-image" style="font-size: 4rem; opacity: 0.3;"></i>
-                                <p class="mt-3">No hay imagen seleccionada</p>
-                            </div>
-                        }
-                    </div>
+                    }
                 </div>
             </div>
-        </EditForm>
-    </div>
+        </div>
 
-    <div class="modal-footer-custom">
-        <button type="button" class="btn btn-lg btn-secondary" @onclick="Cancel">
-            Cancelar
-        </button>
-        <button type="button"
-                class="btn btn-lg btn-primary"
-                @onclick="CreateAsync"
-                disabled="@(string.IsNullOrEmpty(category.Name))">
-            <i class="oi oi-check"></i> Guardar Categoría
-        </button>
-    </div>
-</div>
-
-<script>
-    // Metronic-style Modal Functionality
-    window.CategoryModalJS = {
-        init: function () {
-            const modal = document.querySelector('.custom-modal');
-            if (!modal) return;
-
-            // Animación de entrada
-            modal.style.opacity = '0';
-            modal.style.transform = 'translate(-50%, -48%)';
-            setTimeout(() => {
-                modal.style.transition = 'all 0.3s ease';
-                modal.style.opacity = '1';
-                modal.style.transform = 'translate(-50%, -50%)';
-            }, 10);
-
-            // Preview de imagen con drag & drop
-            this.initDragDrop();
-
-            // Validación en tiempo real
-            this.initValidation();
-        },
-
-        initDragDrop: function () {
-            const uploadArea = document.querySelector('.upload-area');
-            if (!uploadArea) return;
-
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, preventDefaults, false);
-            });
-
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, () => {
-                    uploadArea.style.borderColor = '#667eea';
-                    uploadArea.style.backgroundColor = '#f0f0ff';
-                }, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, () => {
-                    uploadArea.style.borderColor = '#e0e0e0';
-                    uploadArea.style.backgroundColor = '#fafafa';
-                }, false);
-            });
-
-            uploadArea.addEventListener('drop', function (e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                if (files.length > 0) {
-                    const fileInput = document.getElementById('fileInput');
-                    if (fileInput) {
-                        fileInput.files = files;
-                        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
+        <!-- Columna Derecha: Vista Previa -->
+        <div>
+            <label class="form-label fw-bold">Vista Previa</label>
+            <div class="image-preview-container">
+                @if (!string.IsNullOrEmpty(imageUrl))
+                {
+                    <img src="data:image/png;base64,@imageUrl" alt="Preview" />
                 }
-            }, false);
-        },
-
-        initValidation: function () {
-            const nameInput = document.querySelector('input[type="text"]');
-            if (!nameInput) return;
-
-            nameInput.addEventListener('input', function () {
-                if (this.value.length > 0) {
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                } else {
-                    this.classList.remove('is-valid');
-                    this.classList.add('is-invalid');
+                else
+                {
+                    <div class="no-image-placeholder">
+                        <i class="oi oi-image" style="font-size: 4rem; opacity: 0.3;"></i>
+                        <p class="mt-3">No hay imagen seleccionada</p>
+                    </div>
                 }
-            });
-        },
-
-        animateOut: function () {
-            const modal = document.querySelector('.custom-modal');
-            if (modal) {
-                modal.style.opacity = '0';
-                modal.style.transform = 'translate(-50%, -48%)';
-            }
-            return new Promise(resolve => setTimeout(resolve, 300));
-        }
-    };
-
-    // Inicializar cuando el modal se carga
-    document.addEventListener('DOMContentLoaded', function () {
-        setTimeout(() => CategoryModalJS.init(), 100);
-    });
-</script>
+            </div>
+        </div>
+    </div>
+</EditForm>
 
 @code {
     private Category category = new();
@@ -298,15 +140,7 @@
     private bool isLoading = false;
 
     [CascadingParameter]
-    BlazoredModalInstance BlazoredModal { get; set; } = default!;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JSRuntime.InvokeVoidAsync("eval", "CategoryModalJS.init()");
-        }
-    }
+    public Modal Modal { get; set; } = default!;
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
@@ -345,6 +179,7 @@
             catch (Exception ex)
             {
                 await sweetAlertService.FireAsync("Error", $"Error al cargar la imagen: {ex.Message}", SweetAlertIcon.Error);
+                fileName = string.Empty;
             }
             finally
             {
@@ -354,7 +189,7 @@
         }
     }
 
-    private async Task CreateAsync()
+    public async Task CreateAsync()
     {
         if (string.IsNullOrWhiteSpace(category.Name))
         {
@@ -375,26 +210,21 @@
                 return;
             }
 
-            await sweetAlertService.FireAsync("Éxito", "Categoría creada exitosamente", SweetAlertIcon.Success);
+            // await Cancel();
+            StateHasChanged();
 
-            // Animar salida
-            await JSRuntime.InvokeVoidAsync("eval", "CategoryModalJS.animateOut()");
-            await Task.Delay(300);
-
-            await BlazoredModal.CloseAsync(ModalResult.Ok(true));
         }
         finally
         {
             isLoading = false;
             StateHasChanged();
+            // await sweetAlertService.FireAsync("Éxito", "Categoría creada exitosamente", SweetAlertIcon.Success);
+           
         }
     }
 
-    private async Task Cancel()
+    public async Task Cancel()
     {
-        // Animar salida
-        await JSRuntime.InvokeVoidAsync("eval", "CategoryModalJS.animateOut()");
-        await Task.Delay(300);
-        await BlazoredModal.CancelAsync();
+        await Modal.HideAsync();
     }
 }

@@ -26,6 +26,10 @@ namespace fume.api.Data
 
         public DbSet<ProductImage> ProductImages { get; set; }
 
+        public DbSet<SubCategory> SubCategories { get; set; }
+
+        public DbSet<ProductSubCategory> ProductSubCategories { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,6 +40,7 @@ namespace fume.api.Data
             modelBuilder.Entity<State>().HasIndex("CountryId", "Name").IsUnique();
             modelBuilder.Entity<Category>().HasIndex(x => x.Name).IsUnique();
             modelBuilder.Entity<Product>().HasIndex(x => x.Name).IsUnique();
+            modelBuilder.Entity<SubCategory>().HasIndex("CategoryId", "Name").IsUnique();
         }
     }
 }

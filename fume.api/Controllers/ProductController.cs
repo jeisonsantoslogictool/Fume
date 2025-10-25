@@ -29,6 +29,7 @@ namespace fume.api.Controllers
             var queryable = _context.Products
                 .Include(x => x.ProductImages)
                 .Include(x => x.ProductCategories)
+                .Include(x => x.ProductSubCategories)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
@@ -66,6 +67,8 @@ namespace fume.api.Controllers
                 .Include(x => x.ProductImages)
                 .Include(x => x.ProductCategories!)
                 .ThenInclude(x => x.Category)
+                .Include(x => x.ProductSubCategories!)
+                .ThenInclude(x => x.SubCategory)
                 .FirstOrDefaultAsync(x => x.Id == id);
             if (product == null)
             {
@@ -88,6 +91,7 @@ namespace fume.api.Controllers
                     Price = productDTO.Price,
                     Stock = productDTO.Stock,
                     ProductCategories = new List<ProductCategory>(),
+                    ProductSubCategories = new List<ProductSubCategory>(),
                     ProductImages = new List<ProductImage>()
                 };
 
@@ -113,7 +117,20 @@ namespace fume.api.Controllers
                     newProduct.ProductCategories.Add(new ProductCategory { Category = category! });
                 }
 
-                // Guarda los cambios finales en el producto (con categorías e imágenes asociadas)
+                // Asocia las subcategorías al producto
+                if (productDTO.ProductSubCategoryIds != null && productDTO.ProductSubCategoryIds.Any())
+                {
+                    foreach (var productSubCategoryId in productDTO.ProductSubCategoryIds)
+                    {
+                        var subCategory = await _context.SubCategories.FirstOrDefaultAsync(x => x.Id == productSubCategoryId);
+                        if (subCategory != null)
+                        {
+                            newProduct.ProductSubCategories!.Add(new ProductSubCategory { SubCategory = subCategory });
+                        }
+                    }
+                }
+
+                // Guarda los cambios finales en el producto (con categorías, subcategorías e imágenes asociadas)
                 await _context.SaveChangesAsync();
 
                 return Ok(productDTO);
@@ -141,6 +158,7 @@ namespace fume.api.Controllers
             {
                 var product = await _context.Products
                     .Include(x => x.ProductCategories)
+                    .Include(x => x.ProductSubCategories)
                     .FirstOrDefaultAsync(x => x.Id == productDTO.Id);
                 if (product == null)
                 {
@@ -152,6 +170,16 @@ namespace fume.api.Controllers
                 product.Price = productDTO.Price;
                 product.Stock = productDTO.Stock;
                 product.ProductCategories = productDTO.ProductCategoryIds!.Select(x => new ProductCategory { CategoryId = x }).ToList();
+
+                // Actualiza las subcategorías
+                if (productDTO.ProductSubCategoryIds != null)
+                {
+                    product.ProductSubCategories = productDTO.ProductSubCategoryIds.Select(x => new ProductSubCategory { SubCategoryId = x }).ToList();
+                }
+                else
+                {
+                    product.ProductSubCategories = new List<ProductSubCategory>();
+                }
 
                 _context.Update(product);
                 await _context.SaveChangesAsync();

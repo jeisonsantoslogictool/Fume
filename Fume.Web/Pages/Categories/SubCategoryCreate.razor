@@ -71,40 +71,55 @@
     }
 </style>
 
-@if (category is null)
+@if (categories == null)
 {
-    <div class="text-center p-5">
+    <div class="text-center p-3">
         <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando categorías...</span>
         </div>
     </div>
 }
 else
 {
-    <EditForm Model="@category" OnValidSubmit="EditAsync">
+    <EditForm Model="@subCategory" OnValidSubmit="CreateAsync">
         <DataAnnotationsValidator />
 
         <div class="modal-content-grid">
             <!-- Columna Izquierda: Formulario -->
             <div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Nombre de la Categoría</label>
-                    <InputText class="form-control form-control-lg"
-                               @bind-Value="category.Name"
-                               placeholder="Ingrese el nombre de la categoría" />
-                    <ValidationMessage For="@(() => category.Name)" />
+                    <label class="form-label fw-bold">Categoría Padre</label>
+                    <select class="form-select form-select-lg" @bind="subCategory.CategoryId">
+                        <option value="0">Seleccione una categoría...</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    </select>
+                    @if (subCategory.CategoryId == 0)
+                    {
+                        <div class="text-danger small mt-1">Debe seleccionar una categoría</div>
+                    }
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Imagen de la Categoría</label>
+                    <label class="form-label fw-bold">Nombre de la Subcategoría</label>
+                    <InputText class="form-control form-control-lg"
+                               @bind-Value="subCategory.Name"
+                               placeholder="Ingrese el nombre de la subcategoría" />
+                    <ValidationMessage For="@(() => subCategory.Name)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Imagen de la Subcategoría</label>
                     <div class="upload-area">
                         <InputFile OnChange="OnFileSelected"
                                    accept=".png,.jpg,.jpeg"
-                                   id="fileInputEdit"
+                                   id="fileInputSubCategory"
                                    style="display: none;" />
 
-                        <label for="fileInputEdit" class="upload-button">
-                            <i class="oi oi-cloud-upload"></i> Cambiar Imagen
+                        <label for="fileInputSubCategory" class="upload-button">
+                            <i class="oi oi-cloud-upload"></i> Seleccionar Imagen
                         </label>
 
                         <p class="text-muted mt-3 mb-0" style="font-size: 0.875rem;">
@@ -145,7 +160,8 @@ else
 }
 
 @code {
-    private Category? category;
+    private SubCategoryDTO subCategory = new() { CategoryId = 0 };
+    private List<Category>? categories;
     private string? imageUrl;
     private string? fileName;
     private bool isLoading = false;
@@ -153,40 +169,28 @@ else
     [CascadingParameter]
     public Modal Modal { get; set; } = default!;
 
-    [Parameter]
-    public int CategoryId { get; set; }
-
     protected override async Task OnInitializedAsync()
     {
-        var responseHttp = await repository.Get<Category>($"/api/categories/{CategoryId}");
+        await LoadCategoriesAsync();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var responseHttp = await repository.Get<List<Category>>("/api/categories");
         if (responseHttp.Error)
         {
-            if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
-            {
-                await sweetAlertService.FireAsync("Error", "Categoría no encontrada", SweetAlertIcon.Error);
-                await Modal.HideAsync();
-                return;
-            }
-
             var message = await responseHttp.GetErrorMessageAsync();
             await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
             return;
         }
 
-        category = responseHttp.Response;
-
-        // Cargar imagen existente si hay una
-        if (category?.Image != null && category.Image.Length > 0)
-        {
-            imageUrl = Convert.ToBase64String(category.Image);
-            fileName = "Imagen actual";
-        }
+        categories = responseHttp.Response;
     }
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
         var file = e.File;
-        if (file != null && category != null)
+        if (file != null)
         {
             // Validar tamaño
             if (file.Size > 10 * 1024 * 1024)
@@ -215,7 +219,7 @@ else
 
                 // Convertir a Base64
                 imageUrl = Convert.ToBase64String(buffer);
-                category.Image = buffer;
+                subCategory.ImageString = imageUrl;
             }
             catch (Exception ex)
             {
@@ -230,11 +234,17 @@ else
         }
     }
 
-    public async Task EditAsync()
+    public async Task CreateAsync()
     {
-        if (category is null || string.IsNullOrWhiteSpace(category.Name))
+        if (subCategory.CategoryId == 0)
         {
-            await sweetAlertService.FireAsync("Error", "El nombre de la categoría es obligatorio.", SweetAlertIcon.Error);
+            await sweetAlertService.FireAsync("Error", "Debe seleccionar una categoría.", SweetAlertIcon.Error);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(subCategory.Name))
+        {
+            await sweetAlertService.FireAsync("Error", "El nombre de la subcategoría es obligatorio.", SweetAlertIcon.Error);
             return;
         }
 
@@ -243,21 +253,22 @@ else
 
         try
         {
-            var responseHttp = await repository.Put("/api/categories", category);
-            if (responseHttp.Error)
+            var httpResponse = await repository.post("/api/subcategories", subCategory);
+            if (httpResponse.Error)
             {
-                var message = await responseHttp.GetErrorMessageAsync();
+                var message = await httpResponse.GetErrorMessageAsync();
                 await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
                 return;
             }
-
-            await sweetAlertService.FireAsync("Éxito", "Categoría actualizada exitosamente", SweetAlertIcon.Success);
-         
+          
+          
+            
         }
         finally
         {
             isLoading = false;
             StateHasChanged();
+            await sweetAlertService.FireAsync("Éxito", "Subcategoría creada exitosamente", SweetAlertIcon.Success);
         }
     }
 

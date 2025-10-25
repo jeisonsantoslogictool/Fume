@@ -37,6 +37,8 @@ namespace fume.shared.DTOs
 
         public List<int>? ProductCategoryIds { get; set; }
 
+        public List<int>? ProductSubCategoryIds { get; set; }
+
         public List<string>? ProductImages { get; set; }
     }
 

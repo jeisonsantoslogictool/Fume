@@ -1,83 +1,290 @@
-﻿@inject SweetAlertService sweetAlertService
+@inject SweetAlertService sweetAlertService
+
+<style>
+    .product-form-header {
+        background: linear-gradient( 135deg, #2196f3 0%, #f8f9fa 100%) padding: 24px 32px;
+        border-radius: 16px 16px 0 0;
+        color: white;
+        box-shadow: 0 19px 40px rgba(33, 150, 243, 0.2);
+    }
+
+    .product-form-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .product-form-body {
+        background: white;
+        padding: 32px;
+        border-radius: 0 0 16px 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .form-section {
+        background: #f8f9fa;
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px solid #e3f2fd;
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2196F3;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .dropzone-container {
+        min-height: 200px;
+        border-radius: 12px;
+        background: white;
+    }
+
+    .category-item {
+        background: white;
+        border: 2px solid #e3f2fd;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin: 8px;
+        cursor: move;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 500;
+    }
+
+    .category-item:hover {
+        border-color: #2196F3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2);
+    }
+
+    .category-item.selected {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        color: white;
+        border-color: #1976D2;
+    }
+
+    .dropzone-selected {
+        background: linear-gradient(to bottom, #E3F2FD 0%, #BBDEFB 100%);
+        border: 2px dashed #2196F3;
+        min-height: 200px;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .dropzone-available {
+        background: #f8f9fa;
+        border: 2px dashed #ccc;
+        min-height: 200px;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .empty-message {
+        text-align: center;
+        color: #999;
+        padding: 40px 20px;
+        font-size: 0.95rem;
+    }
+
+    @@media (max-width: 768px) {
+        .product-form-header {
+            padding: 16px 20px;
+        }
+
+        .product-form-body {
+            padding: 20px;
+        }
+    }
+</style>
 
 <NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
 
-<EditForm EditContext="editContext" OnValidSubmit="OnDataAnnotationsValidatedAsync">
-    <DataAnnotationsValidator />
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <EditForm EditContext="editContext" OnValidSubmit="OnDataAnnotationsValidatedAsync">
+        <DataAnnotationsValidator />
 
-    <div class="card">
-        <div class="card-header">
-            <span>
-                <i class="oi oi-star" /> Crear Nuevo Producto
-                <a class="btn btn-sm btn-success float-end" href="/products"><i class="oi oi-arrow-thick-left" /> Regresar</a>
-                <button class="btn btn-sm btn-primary float-end mx-2" type="submit"><i class="oi oi-check" /> Guardar Cambios</button>
-            </span>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-6">
-                    <div class="mb-3">
-                        <label>Nombre:</label>
-                        <div>
-                            <InputText class="form-control" @bind-Value="@ProductDTO.Name" />
-                            <ValidationMessage For="@(() => ProductDTO.Name)" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label>Descripción:</label>
-                        <div>
-                            <InputText class="form-control" @bind-Value="@ProductDTO.Description" />
-                            <ValidationMessage For="@(() => ProductDTO.Description)" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label>Precio:</label>
-                        <div>
-                            <InputNumber class="form-control" @bind-Value="@ProductDTO.Price" />
-                            <ValidationMessage For="@(() => ProductDTO.Price)" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label>Inventario:</label>
-                        <div>
-                            <InputNumber class="form-control" @bind-Value="@ProductDTO.Stock" />
-                            <ValidationMessage For="@(() => ProductDTO.Stock)" />
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="mb-3">
-                        <label>Categorías:</label>
-                        <div>
-                            <MultipleSelector NonSelected="nonSelected" Selected="selected" />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <InputImg Label="Foto" ImageSelected="ImageSelected" ImageURL="@imageUrl" />
-                    </div>
-                    @if (IsEdit)
-                    {
-                        <div class="mb-3">
-                            <button type="button" class="btn btn-outline-primary" @onclick="AddImageAction"><i class="oi oi-plus" /> Agregar Imagenes</button>
-                            <button type="button" class="btn btn-outline-danger" @onclick="RemoveImageAction"><i class="oi oi-trash" /> Eliminar Última Imagén</button>
-                        </div>
-                    }
+        <div class="product-form-header">
+            <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap: 12px;">
+                <h1 class="product-form-title">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Large" />
+                    @(IsEdit ? "Editar Producto" : "Crear Nuevo Producto")
+                </h1>
+                <div class="d-flex gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.ArrowBack"
+                               OnClick="ReturnAction"
+                               Style="background: white; color: #2196F3; font-weight: 600;">
+                        Regresar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Check"
+                               ButtonType="MudBlazor.ButtonType.Submit"
+                               Style="background: white; color: #4CAF50; font-weight: 600;">
+                        Guardar Cambios
+                    </MudButton>
                 </div>
             </div>
         </div>
-    </div>
-</EditForm>
+
+        <div class="product-form-body">
+            <MudGrid Spacing="4">
+                <!-- Columna Izquierda: Información del Producto -->
+                <MudItem xs="12" md="6">
+                    <div class="form-section">
+                        <div class="section-title">
+                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Medium" />
+                            Información del Producto
+                        </div>
+
+                        <MudTextField @bind-Value="ProductDTO.Name"
+                                      Label="Nombre"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Class="mb-3"
+                                      Required="true"
+                                      For="@(() => ProductDTO.Name)" />
+
+                        <MudTextField @bind-Value="ProductDTO.Description"
+                                      Label="Descripción"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Lines="4"
+                                      Class="mb-3"
+                                      For="@(() => ProductDTO.Description)" />
+
+                        <MudNumericField @bind-Value="ProductDTO.Price"
+                                         Label="Precio"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Format="C2"
+                                         Class="mb-3"
+                                         Adornment="Adornment.Start"
+                                         AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                                         Required="true"
+                                         For="@(() => ProductDTO.Price)" />
+
+                        <MudNumericField @bind-Value="ProductDTO.Stock"
+                                         Label="Inventario"
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Class="mb-3"
+                                         Adornment="Adornment.Start"
+                                         AdornmentIcon="@Icons.Material.Filled.Inventory2"
+                                         Required="true"
+                                         For="@(() => ProductDTO.Stock)" />
+                    </div>
+
+                    <!-- Sección de Imagen -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Medium" />
+                            Imagen del Producto
+                        </div>
+                        <InputImg Label="Foto" ImageSelected="ImageSelected" ImageURL="@imageUrl" />
+
+                        @if (IsEdit)
+                        {
+                            <div class="d-flex gap-2 mt-3">
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.Add"
+                                           OnClick="AddImageAction">
+                                    Agregar Imágenes
+                                </MudButton>
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Error"
+                                           StartIcon="@Icons.Material.Filled.Delete"
+                                           OnClick="RemoveImageAction">
+                                    Eliminar Última Imagen
+                                </MudButton>
+                            </div>
+                        }
+                    </div>
+                </MudItem>
+
+                <!-- Columna Derecha: Categorías con DropZone -->
+                <MudItem xs="12" md="6">
+                    <div class="form-section">
+                        <div class="section-title">
+                            <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Medium" />
+                            Gestión de Categorías
+                        </div>
+
+                        <MudDropContainer T="MultipleSelectorModel"
+                                          Items="@allCategories"
+                                          ItemsSelector="@((item, dropzone) => item.Selected == (dropzone == "selected"))"
+                                          ItemDropped="ItemUpdated"
+                                          Class="dropzone-container">
+                            <ChildContent>
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" md="6">
+                                        <MudText Typo="Typo.subtitle2" Class="mb-2">
+                                            <MudIcon Icon="@Icons.Material.Filled.List" Size="Size.Small" Color="Color.Info" />
+                                            Categorías Disponibles
+                                        </MudText>
+                                        <MudDropZone T="MultipleSelectorModel"
+                                                     Identifier="available"
+                                                     Class="dropzone-available" />
+                                    </MudItem>
+
+                                    <MudItem xs="12" md="6">
+                                        <MudText Typo="Typo.subtitle2" Class="mb-2">
+                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                                            Categorías Seleccionadas
+                                        </MudText>
+                                        <MudDropZone T="MultipleSelectorModel"
+                                                     Identifier="selected"
+                                                     Class="dropzone-selected">
+                                            @if (!allCategories.Any(x => x.Selected))
+                                            {
+                                                <div class="empty-message">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" Style="opacity: 0.3;" />
+                                                    <p>Arrastra categorías aquí para seleccionarlas</p>
+                                                </div>
+                                            }
+                                        </MudDropZone>
+                                    </MudItem>
+                                </MudGrid>
+                            </ChildContent>
+                            <ItemRenderer Context="item">
+                                <MudPaper Class="@($"category-item {(item.Selected ? "selected" : "")}")">
+                                    <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Size="Size.Small" />
+                                    @item.Value
+                                </MudPaper>
+                            </ItemRenderer>
+                        </MudDropContainer>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </div>
+    </EditForm>
+</MudContainer>
 
 @if (IsEdit && ProductDTO.ProductImages is not null)
 {
-    <CarouseView Images="ProductDTO.ProductImages" />
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+        <CarouseView Images="ProductDTO.ProductImages" />
+    </MudContainer>
 }
 
 @code {
     private EditContext editContext = null!;
     private List<MultipleSelectorModel> selected { get; set; } = new();
     private List<MultipleSelectorModel> nonSelected { get; set; } = new();
+    private List<MultipleSelectorModel> allCategories = new();
     private string? imageUrl;
+    private bool initialized = false;
 
     [Parameter]
     public bool IsEdit { get; set; } = false;
@@ -104,46 +311,63 @@
     public List<Category> SelectedCategories { get; set; } = new();
 
     [Parameter]
-    [EditorRequired]
     public List<Category> NonSelectedCategories { get; set; } = new();
 
-    public bool FormPostedSuccessfully { get; set; } = false;
+    public bool FormPostedSuccessfully { get; set; }
 
     protected override void OnInitialized()
     {
-        editContext = new(ProductDTO);
+        if (!initialized)
+        {
+            editContext = new(ProductDTO);
 
-        selected = SelectedCategories.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name)).ToList();
-        nonSelected = NonSelectedCategories.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name)).ToList();
+            selected = SelectedCategories.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name) { Selected = true }).ToList();
+            nonSelected = NonSelectedCategories.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name) { Selected = false }).ToList();
+
+            // Combinar ambas listas
+            allCategories = selected.Concat(nonSelected).ToList();
+
+            if (!string.IsNullOrEmpty(ProductDTO.Name) && ProductDTO.ProductImages != null && ProductDTO.ProductImages.Count > 0)
+            {
+                imageUrl = ProductDTO.ProductImages.FirstOrDefault();
+            }
+
+            initialized = true;
+        }
     }
 
-    private void ImageSelected(string imagenBase64)
+    private void ItemUpdated(MudItemDropInfo<MultipleSelectorModel> dropItem)
     {
-        if (ProductDTO.ProductImages is null)
-        {
-            ProductDTO.ProductImages = new List<string>();
-        }
+        if (dropItem.Item == null) return;
 
-        ProductDTO.ProductImages!.Add(imagenBase64);
-        imageUrl = null;
+        dropItem.Item.Selected = dropItem.DropzoneIdentifier == "selected";
+
+        ProductDTO.ProductCategoryIds = allCategories
+            .Where(x => x.Selected)
+            .Select(x => int.Parse(x.Key))
+            .ToList();
     }
 
     private async Task OnDataAnnotationsValidatedAsync()
     {
-        ProductDTO.ProductCategoryIds = selected.Select(x => int.Parse(x.Key)).ToList();
+        ProductDTO.ProductCategoryIds = allCategories
+            .Where(x => x.Selected)
+            .Select(x => int.Parse(x.Key))
+            .ToList();
+
         await OnValidSubmit.InvokeAsync();
+    }
+
+    private void ImageSelected(string imageBase64)
+    {
+        ProductDTO.ProductImages!.Add(imageBase64);
+        imageUrl = imageBase64;
     }
 
     private async Task OnBeforeInternalNavigation(LocationChangingContext context)
     {
-        var formWasEdited = editContext.IsModified();
-
-        if (!formWasEdited)
-        {
-            return;
-        }
-
-        if (FormPostedSuccessfully)
+        var formWasMofied = editContext.IsModified();
+        if (!formWasMofied || FormPostedSuccessfully)
         {
             return;
         }
@@ -152,12 +376,13 @@
             {
                 Title = "Confirmación",
                 Text = "¿Deseas abandonar la página y perder los cambios?",
-                Icon = SweetAlertIcon.Warning,
-                ShowCancelButton = true
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true,
+                CancelButtonText = "No",
+                ConfirmButtonText = "Si"
             });
 
         var confirm = !string.IsNullOrEmpty(result.Value);
-
         if (confirm)
         {
             return;

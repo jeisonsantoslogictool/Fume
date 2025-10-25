@@ -7,21 +7,37 @@
 
 <style>
     .products-header {
-        background: linear-gradient(135deg, #2196f3 0%, #fff 100%);
-        padding: 30px;
-        border-radius: 15px;
+        background: linear-gradient(135deg, #2196F3 0%, #e3f2fd 100%);
+        padding: 32px;
+        border-radius: 16px;
         margin-bottom: 30px;
-        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 10px 30px rgba(33, 150, 243, 0.3);
     }
 
     .products-title {
         color: white;
         font-size: 2rem;
-        font-weight: 600;
+        font-weight: 700;
         margin: 0;
         display: flex;
         align-items: center;
         gap: 15px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .action-buttons-group {
+        animation: slideInRight 0.4s ease-out;
+    }
+
+    @@keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
     }
 
     .search-card {
@@ -161,19 +177,27 @@ else
     <MudContainer MaxWidth="MaxWidth.ExtraLarge">
         <!-- Header -->
         <div class="products-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="products-title">
+            <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap: 16px;">
+                <h1 class="products-title mb-0">
                     <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Large" />
                     Gestión de Productos
                 </h1>
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Default"
-                           StartIcon="@Icons.Material.Filled.Add"
-                           Size="Size.Large"
-                           Href="/products/create"
-                           Style="background-color: white; color: #667eea; font-weight: 600;">
-                    Nuevo Producto
-                </MudButton>
+                <div class="action-buttons-group">
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Size="Size.Large"
+                               Href="/products/create"
+                               Style="background: #2196f3;
+                                      color: #f8f9fa;
+                                      font-weight: 600;
+                                      padding: 12px 28px;
+                                      text-transform: none;
+                                      font-size: 1rem;
+                                      box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+                                      border-radius: 12px;">
+                        Nuevo Producto
+                    </MudButton>
+                </div>
             </div>
         </div>
 
@@ -192,7 +216,7 @@ else
                 </MudItem>
                 <MudItem xs="12" md="4" Class="d-flex align-items-center gap-2">
                     <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
+                               Color="Color.Info"
                                StartIcon="@Icons.Material.Filled.FilterList"
                                FullWidth="true"
                                OnClick="ApplyFilterAsync">
@@ -284,12 +308,7 @@ else
             }
         </MudGrid>
 
-        <!-- Pagination -->
-        <div class="mt-4 d-flex justify-content-center">
-            <Pagination CurrentPage="currentPage"
-                        TotalPages="totalPages"
-                        SelectedPage="SelectedPageAsync" />
-        </div>
+      
     </MudContainer>
 }
 

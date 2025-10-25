@@ -40,6 +40,11 @@ namespace fume.shared.Enttities
         [Display(Name = "Categorías")]
         public int ProductCategoriesNumber => ProductCategories == null ? 0 : ProductCategories.Count;
 
+        public ICollection<ProductSubCategory>? ProductSubCategories { get; set; }
+
+        [Display(Name = "Subcategorías")]
+        public int ProductSubCategoriesNumber => ProductSubCategories == null ? 0 : ProductSubCategories.Count;
+
         public ICollection<ProductImage>? ProductImages { get; set; }
 
         [Display(Name = "Imágenes")]

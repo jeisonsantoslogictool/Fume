@@ -1,8 +1,7 @@
-﻿using fume.api.Data;
+using fume.api.Data;
 using fume.api.Helpers;
 using fume.shared.DTOs;
 using fume.shared.Enttities;
-using fume.shared.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,22 +11,21 @@ namespace fume.api.Controllers
 {
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    [Route("/api/categories")]
-    public class CategoiresController : ControllerBase
+    [Route("/api/subcategories")]
+    public class SubCategoriesController : ControllerBase
     {
         private readonly DataContext _context;
 
-        public CategoiresController(DataContext context)
+        public SubCategoriesController(DataContext context)
         {
             _context = context;
         }
 
-
         [HttpGet]
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
-            var queryable = _context.categories
-                .Include(x => x.SubCategories)
+            var queryable = _context.SubCategories
+                .Include(x => x.Category)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
@@ -36,18 +34,18 @@ namespace fume.api.Controllers
             }
 
             return Ok(await queryable
-                .OrderBy(x => x.Name)
+                .OrderBy(x => x.Category.Name)
+                .ThenBy(x => x.Name)
                 .Paginate(pagination)
                 .ToListAsync());
         }
 
-
         [HttpGet("totalPages")]
         public async Task<ActionResult> GetPages([FromQuery] PaginationDTO pagination)
         {
-            var queryable = _context.categories
+            var queryable = _context.SubCategories
                 .AsQueryable();
-            
+
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
             {
                 queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
@@ -61,32 +59,54 @@ namespace fume.api.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult> Get(int id)
         {
-            var category = await _context.categories
-                .Include(x => x.SubCategories)
+            var subCategory = await _context.SubCategories
+                .Include(x => x.Category)
                 .FirstOrDefaultAsync(x => x.Id == id);
-            if (category is null)
+
+            if (subCategory is null)
             {
                 return NotFound();
             }
 
-            return Ok(category);
+            return Ok(subCategory);
         }
 
+        [HttpGet("bycategory/{categoryId:int}")]
+        public async Task<ActionResult> GetByCategory(int categoryId)
+        {
+            var subCategories = await _context.SubCategories
+                .Where(x => x.CategoryId == categoryId)
+                .OrderBy(x => x.Name)
+                .ToListAsync();
+
+            return Ok(subCategories);
+        }
 
         [HttpPost]
-        public async Task<ActionResult> Post(Category category)
+        public async Task<ActionResult> Post(SubCategoryDTO subCategoryDTO)
         {
-            _context.Add(category);
+            var subCategory = new SubCategory
+            {
+                Name = subCategoryDTO.Name,
+                CategoryId = subCategoryDTO.CategoryId
+            };
+
+            if (!string.IsNullOrEmpty(subCategoryDTO.ImageString))
+            {
+                subCategory.Image = Convert.FromBase64String(subCategoryDTO.ImageString);
+            }
+
+            _context.Add(subCategory);
             try
             {
                 await _context.SaveChangesAsync();
-                return Ok(category);
+                return Ok(subCategory);
             }
             catch (DbUpdateException dbUpdateException)
             {
                 if (dbUpdateException.InnerException!.Message.Contains("duplicate"))
                 {
-                    return BadRequest("Ya existe un registro con el mismo nombre.");
+                    return BadRequest("Ya existe una subcategoria con el mismo nombre en esta categoria.");
                 }
                 else
                 {
@@ -100,19 +120,33 @@ namespace fume.api.Controllers
         }
 
         [HttpPut]
-        public async Task<ActionResult> Put(Category category)
+        public async Task<ActionResult> Put(SubCategoryDTO subCategoryDTO)
         {
-            _context.Update(category);
+            var subCategory = await _context.SubCategories.FindAsync(subCategoryDTO.Id);
+            if (subCategory == null)
+            {
+                return NotFound();
+            }
+
+            subCategory.Name = subCategoryDTO.Name;
+            subCategory.CategoryId = subCategoryDTO.CategoryId;
+
+            if (!string.IsNullOrEmpty(subCategoryDTO.ImageString))
+            {
+                subCategory.Image = Convert.FromBase64String(subCategoryDTO.ImageString);
+            }
+
+            _context.Update(subCategory);
             try
             {
                 await _context.SaveChangesAsync();
-                return Ok(category);
+                return Ok(subCategory);
             }
             catch (DbUpdateException dbUpdateException)
             {
                 if (dbUpdateException.InnerException!.Message.Contains("duplicate"))
                 {
-                    return BadRequest("Ya existe un registro con el mismo nombre.");
+                    return BadRequest("Ya existe una subcategoria con el mismo nombre en esta categoria.");
                 }
                 else
                 {
@@ -128,16 +162,15 @@ namespace fume.api.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteAsync(int id)
         {
-            var category = await _context.categories.FirstOrDefaultAsync(x => x.Id == id);
-            if (category == null)
+            var subCategory = await _context.SubCategories.FirstOrDefaultAsync(x => x.Id == id);
+            if (subCategory == null)
             {
                 return NotFound();
             }
 
-            _context.Remove(category);
+            _context.Remove(subCategory);
             await _context.SaveChangesAsync();
             return NoContent();
         }
     }
 }
-
