@@ -10,7 +10,17 @@
 }
 else
 {
-    <ProductForm @ref="productForm" ProductDTO="productDTO" SelectedCategories="selectedCategories" NonSelectedCategories="nonSelectedCategories" OnValidSubmit="SaveChangesAsync" ReturnAction="Return" IsEdit=true AddImageAction="AddImageAsync" RemoveImageAction="RemoveImageAsyc" />
+    <ProductForm @ref="productForm"
+                 ProductDTO="productDTO"
+                 SelectedCategories="selectedCategories"
+                 NonSelectedCategories="nonSelectedCategories"
+                 SelectedSubCategories="selectedSubCategories"
+                 NonSelectedSubCategories="nonSelectedSubCategories"
+                 OnValidSubmit="SaveChangesAsync"
+                 ReturnAction="Return"
+                 IsEdit="true"
+                 AddImageAction="AddImageAsync"
+                 RemoveImageAction="RemoveImageAsyc" />
 }
 
 @code {
@@ -23,6 +33,8 @@ else
     private ProductForm? productForm;
     private List<Category> selectedCategories = new();
     private List<Category> nonSelectedCategories = new();
+    private List<SubCategory> selectedSubCategories = new();
+    private List<SubCategory> nonSelectedSubCategories = new();
     private bool loading = true;
     private Product? product;
 
@@ -33,6 +45,7 @@ else
     {
         await LoadProductAsync();
         await LoadCategoriesAsync();
+        await LoadSubCategoriesAsync();
     }
 
     private async Task AddImageAsync()
@@ -71,6 +84,7 @@ else
                 Price = product.Price,
                 Stock = product.Stock,
                 ProductCategoryIds = product.ProductCategories!.Select(x => x.CategoryId).ToList(),
+                ProductSubCategoryIds = product.ProductSubCategories!.Select(x => x.SubCategoryId).ToList(),
                 ProductImages = product.ProductImages!.Select(x => Convert.ToBase64String(x.Imagefile)).ToList()
             };
     }
@@ -99,6 +113,35 @@ else
             else
             {
                 selectedCategories.Add(category);
+            }
+        }
+        loading = false;
+    }
+
+    private async Task LoadSubCategoriesAsync()
+    {
+        loading = true;
+        var httpResponse = await repository.Get<List<SubCategory>>("/api/subcategories");
+
+        if (httpResponse.Error)
+        {
+            loading = false;
+            var message = await httpResponse.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        var subCategories = httpResponse.Response!;
+        foreach (var subCategory in subCategories!)
+        {
+            var found = product!.ProductSubCategories!.FirstOrDefault(x => x.SubCategoryId == subCategory.Id);
+            if (found == null)
+            {
+                nonSelectedSubCategories.Add(subCategory);
+            }
+            else
+            {
+                selectedSubCategories.Add(subCategory);
             }
         }
         loading = false;

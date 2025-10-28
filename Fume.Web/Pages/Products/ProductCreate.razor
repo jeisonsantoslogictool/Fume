@@ -10,7 +10,12 @@
 }
 else
 {
-    <ProductForm @ref="productForm" ProductDTO="productDTO" NonSelectedCategories="nonSelectedCategories" OnValidSubmit="CreateAsync" ReturnAction="Return" />
+    <ProductForm @ref="productForm"
+                 ProductDTO="productDTO"
+                 NonSelectedCategories="nonSelectedCategories"
+                 NonSelectedSubCategories="nonSelectedSubCategories"
+                 OnValidSubmit="CreateAsync"
+                 ReturnAction="Return" />
 }
  
 
@@ -24,25 +29,39 @@ else
     private ProductForm? productForm;
     private List<Category> selectedCategories = new();
     private List<Category> nonSelectedCategories = new();
+    private List<SubCategory> selectedSubCategories = new();
+    private List<SubCategory> nonSelectedSubCategories = new();
     private bool loading = true;
 
     protected async override Task OnAfterRenderAsync(bool render)
     {
-
-        var httpResponse = await repository.Get<List<Category>>("/api/categories");
-
-
-        if (httpResponse.Error)
+        if (render)
         {
-            var message = await httpResponse.GetErrorMessageAsync();
-            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-            return;
+            var categoriesResponse = await repository.Get<List<Category>>("/api/categories");
+
+            if (categoriesResponse.Error)
+            {
+                var message = await categoriesResponse.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                return;
+            }
+
+            nonSelectedCategories = categoriesResponse.Response!;
+
+            // Cargar subcategorías
+            var subCategoriesResponse = await repository.Get<List<SubCategory>>("/api/subcategories");
+
+            if (subCategoriesResponse.Error)
+            {
+                var message = await subCategoriesResponse.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                return;
+            }
+
+            nonSelectedSubCategories = subCategoriesResponse.Response!;
+            loading = false;
+            StateHasChanged();
         }
-
-        nonSelectedCategories = httpResponse.Response!;
-        loading = false;
-        StateHasChanged();
-
     }
 
     private async Task CreateAsync()

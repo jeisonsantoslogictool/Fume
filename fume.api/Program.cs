@@ -22,6 +22,16 @@ builder.Services.AddResponseCompression(opts =>
 
 // Add services to the container.
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -115,13 +125,8 @@ void SeedeDataDb(WebApplication app)
 
     app.UseResponseCompression();
     app.UseHttpsRedirection();
+    app.UseCors("AllowAll");
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
-    app.UseCors(x => x
-       .AllowAnyMethod()
-       .AllowAnyHeader()
-       .SetIsOriginAllowed(Origin => true)
-       .AllowCredentials()
-        );
     app.Run();

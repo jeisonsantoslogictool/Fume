@@ -12,12 +12,12 @@ namespace fume.api.Controllers
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("/api/products")]
-    public class ProductsController : ControllerBase
+    public class ProductController : ControllerBase
     {
         private readonly DataContext _context;
         private readonly IFileStorage _fileStorage;
 
-        public ProductsController(DataContext context, IFileStorage fileStorage)
+        public ProductController(DataContext context, IFileStorage fileStorage)
         {
             _context = context;
             _fileStorage = fileStorage;
@@ -114,7 +114,7 @@ namespace fume.api.Controllers
                 foreach (var productCategoryId in productDTO.ProductCategoryIds!)
                 {
                     var category = await _context.categories.FirstOrDefaultAsync(x => x.Id == productCategoryId);
-                    newProduct.ProductCategories.Add(new ProductCategory { Category = category! });
+                    newProduct.ProductCategories.Add(new ProductCategory { ProductId = newProduct.Id, CategoryId = productCategoryId, Category = category! });
                 }
 
                 // Asocia las subcategorías al producto
@@ -125,7 +125,7 @@ namespace fume.api.Controllers
                         var subCategory = await _context.SubCategories.FirstOrDefaultAsync(x => x.Id == productSubCategoryId);
                         if (subCategory != null)
                         {
-                            newProduct.ProductSubCategories!.Add(new ProductSubCategory { SubCategory = subCategory });
+                            newProduct.ProductSubCategories!.Add(new ProductSubCategory { ProductId = newProduct.Id, SubCategoryId = productSubCategoryId, SubCategory = subCategory });
                         }
                     }
                 }
@@ -169,12 +169,12 @@ namespace fume.api.Controllers
                 product.Description = productDTO.Description;
                 product.Price = productDTO.Price;
                 product.Stock = productDTO.Stock;
-                product.ProductCategories = productDTO.ProductCategoryIds!.Select(x => new ProductCategory { CategoryId = x }).ToList();
+                product.ProductCategories = productDTO.ProductCategoryIds!.Select(x => new ProductCategory { ProductId = product.Id, CategoryId = x }).ToList();
 
                 // Actualiza las subcategorías
                 if (productDTO.ProductSubCategoryIds != null)
                 {
-                    product.ProductSubCategories = productDTO.ProductSubCategoryIds.Select(x => new ProductSubCategory { SubCategoryId = x }).ToList();
+                    product.ProductSubCategories = productDTO.ProductSubCategoryIds.Select(x => new ProductSubCategory { ProductId = product.Id, SubCategoryId = x }).ToList();
                 }
                 else
                 {
@@ -200,6 +200,20 @@ namespace fume.api.Controllers
             }
         }
 
+
+        [HttpGet("subcategory/{subcategoryId:int}")]
+        public async Task<ActionResult> GetBySubcategoryAsync(int subcategoryId)
+        {
+            var products = await _context.Products
+                .Include(x => x.ProductImages)
+                .Include(x => x.ProductCategories)
+                .Include(x => x.ProductSubCategories)
+                .Where(x => x.ProductSubCategories!.Any(ps => ps.SubCategoryId == subcategoryId))
+                .OrderBy(x => x.Name)
+                .ToListAsync();
+
+            return Ok(products);
+        }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteAsync(int id)

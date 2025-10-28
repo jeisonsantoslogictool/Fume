@@ -2,7 +2,8 @@
 
 <style>
     .product-form-header {
-        background: linear-gradient( 135deg, #2196f3 0%, #f8f9fa 100%) padding: 24px 32px;
+        background: linear-gradient( 135deg, #2196f3 0%, #f8f9fa 100%);
+        padding: 24px 32px;
         border-radius: 16px 16px 0 0;
         color: white;
         box-shadow: 0 19px 40px rgba(33, 150, 243, 0.2);
@@ -266,6 +267,58 @@
                             </ItemRenderer>
                         </MudDropContainer>
                     </div>
+
+                    <!-- Sección de Subcategorías -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <MudIcon Icon="@Icons.Material.Filled.Sell" Size="Size.Medium" />
+                            Gestión de Subcategorías
+                        </div>
+
+                        <MudDropContainer T="MultipleSelectorModel"
+                                          Items="@allSubCategories"
+                                          ItemsSelector="@((item, dropzone) => item.Selected == (dropzone == "selected"))"
+                                          ItemDropped="ItemUpdated"
+                                          Class="dropzone-container">
+                            <ChildContent>
+                                <MudGrid Spacing="2">
+                                    <MudItem xs="12" md="6">
+                                        <MudText Typo="Typo.subtitle2" Class="mb-2">
+                                            <MudIcon Icon="@Icons.Material.Filled.List" Size="Size.Small" Color="Color.Info" />
+                                            Subcategorías Disponibles
+                                        </MudText>
+                                        <MudDropZone T="MultipleSelectorModel"
+                                                     Identifier="available"
+                                                     Class="dropzone-available" />
+                                    </MudItem>
+
+                                    <MudItem xs="12" md="6">
+                                        <MudText Typo="Typo.subtitle2" Class="mb-2">
+                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                                            Subcategorías Seleccionadas
+                                        </MudText>
+                                        <MudDropZone T="MultipleSelectorModel"
+                                                     Identifier="selected"
+                                                     Class="dropzone-selected">
+                                            @if (!allSubCategories.Any(x => x.Selected))
+                                            {
+                                                <div class="empty-message">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Sell" Size="Size.Large" Style="opacity: 0.3;" />
+                                                    <p>Arrastra subcategorías aquí para seleccionarlas</p>
+                                                </div>
+                                            }
+                                        </MudDropZone>
+                                    </MudItem>
+                                </MudGrid>
+                            </ChildContent>
+                            <ItemRenderer Context="item">
+                                <MudPaper Class="@($"category-item {(item.Selected ? "selected" : "")}")">
+                                    <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Size="Size.Small" />
+                                    @item.Value
+                                </MudPaper>
+                            </ItemRenderer>
+                        </MudDropContainer>
+                    </div>
                 </MudItem>
             </MudGrid>
         </div>
@@ -284,6 +337,9 @@
     private List<MultipleSelectorModel> selected { get; set; } = new();
     private List<MultipleSelectorModel> nonSelected { get; set; } = new();
     private List<MultipleSelectorModel> allCategories = new();
+    private List<MultipleSelectorModel> selectedSubCategories { get; set; } = new();
+    private List<MultipleSelectorModel> nonSelectedSubCategories { get; set; } = new();
+    private List<MultipleSelectorModel> allSubCategories = new();
     private string? imageUrl;
     private bool initialized = false;
 
@@ -314,6 +370,12 @@
     [Parameter]
     public List<Category> NonSelectedCategories { get; set; } = new();
 
+    [Parameter]
+    public List<SubCategory> SelectedSubCategories { get; set; } = new();
+
+    [Parameter]
+    public List<SubCategory> NonSelectedSubCategories { get; set; } = new();
+
     public bool FormPostedSuccessfully { get; set; }
 
     protected override void OnInitialized()
@@ -325,8 +387,15 @@
             selected = SelectedCategories.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name) { Selected = true }).ToList();
             nonSelected = NonSelectedCategories.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name) { Selected = false }).ToList();
 
-            // Combinar ambas listas
+            // Combinar ambas listas de categorías
             allCategories = selected.Concat(nonSelected).ToList();
+
+            // Inicializar subcategorías
+            selectedSubCategories = SelectedSubCategories.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name) { Selected = true }).ToList();
+            nonSelectedSubCategories = NonSelectedSubCategories.Select(x => new MultipleSelectorModel(x.Id.ToString(), x.Name) { Selected = false }).ToList();
+
+            // Combinar ambas listas de subcategorías
+            allSubCategories = selectedSubCategories.Concat(nonSelectedSubCategories).ToList();
 
             if (!string.IsNullOrEmpty(ProductDTO.Name) && ProductDTO.ProductImages != null && ProductDTO.ProductImages.Count > 0)
             {
@@ -343,15 +412,33 @@
 
         dropItem.Item.Selected = dropItem.DropzoneIdentifier == "selected";
 
-        ProductDTO.ProductCategoryIds = allCategories
-            .Where(x => x.Selected)
-            .Select(x => int.Parse(x.Key))
-            .ToList();
+        // Actualizar categorías
+        if (allCategories.Contains(dropItem.Item))
+        {
+            ProductDTO.ProductCategoryIds = allCategories
+                .Where(x => x.Selected)
+                .Select(x => int.Parse(x.Key))
+                .ToList();
+        }
+
+        // Actualizar subcategorías
+        if (allSubCategories.Contains(dropItem.Item))
+        {
+            ProductDTO.ProductSubCategoryIds = allSubCategories
+                .Where(x => x.Selected)
+                .Select(x => int.Parse(x.Key))
+                .ToList();
+        }
     }
 
     private async Task OnDataAnnotationsValidatedAsync()
     {
         ProductDTO.ProductCategoryIds = allCategories
+            .Where(x => x.Selected)
+            .Select(x => int.Parse(x.Key))
+            .ToList();
+
+        ProductDTO.ProductSubCategoryIds = allSubCategories
             .Where(x => x.Selected)
             .Select(x => int.Parse(x.Key))
             .ToList();
