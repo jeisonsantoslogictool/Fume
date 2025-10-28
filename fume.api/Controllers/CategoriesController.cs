@@ -106,11 +106,21 @@ namespace fume.api.Controllers
         [HttpPut]
         public async Task<ActionResult> Put(Category category)
         {
-            _context.Update(category);
             try
             {
+                var existingCategory = await _context.categories.FindAsync(category.Id);
+                if (existingCategory == null)
+                {
+                    return NotFound();
+                }
+
+                // Solo actualizar los campos permitidos
+                existingCategory.Name = category.Name;
+                existingCategory.Image = category.Image;
+
+                _context.Update(existingCategory);
                 await _context.SaveChangesAsync();
-                return Ok(category);
+                return Ok(existingCategory);
             }
             catch (DbUpdateException dbUpdateException)
             {
