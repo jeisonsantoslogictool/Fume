@@ -104,19 +104,24 @@ namespace fume.api.Controllers
         }
 
         [HttpPut]
-        public async Task<ActionResult> Put(Category category)
+        public async Task<ActionResult> Put(CategoryDTO categoryDTO)
         {
             try
             {
-                var existingCategory = await _context.categories.FindAsync(category.Id);
+                var existingCategory = await _context.categories.FindAsync(categoryDTO.Id);
                 if (existingCategory == null)
                 {
                     return NotFound();
                 }
 
                 // Solo actualizar los campos permitidos
-                existingCategory.Name = category.Name;
-                existingCategory.Image = category.Image;
+                existingCategory.Name = categoryDTO.Name;
+
+                // Si hay una imagen en el DTO, convertirla de Base64
+                if (!string.IsNullOrEmpty(categoryDTO.ImageString))
+                {
+                    existingCategory.Image = Convert.FromBase64String(categoryDTO.ImageString);
+                }
 
                 _context.Update(existingCategory);
                 await _context.SaveChangesAsync();

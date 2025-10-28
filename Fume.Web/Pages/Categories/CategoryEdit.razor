@@ -1,5 +1,6 @@
 @inject IRepository repository
 @inject SweetAlertService sweetAlertService
+@using fume.shared.DTOs
 
 <style>
     .modal-content-grid {
@@ -71,7 +72,7 @@
     }
 </style>
 
-@if (category is null)
+@if (categoryDTO is null)
 {
     <div class="text-center p-5">
         <div class="spinner-border text-primary" role="status">
@@ -81,7 +82,7 @@
 }
 else
 {
-    <EditForm Model="@category" OnValidSubmit="EditAsync">
+    <EditForm Model="@categoryDTO" OnValidSubmit="EditAsync">
         <DataAnnotationsValidator />
 
         <div class="modal-content-grid">
@@ -90,9 +91,9 @@ else
                 <div class="mb-3">
                     <label class="form-label fw-bold">Nombre de la Categoría</label>
                     <InputText class="form-control form-control-lg"
-                               @bind-Value="category.Name"
+                               @bind-Value="categoryDTO.Name"
                                placeholder="Ingrese el nombre de la categoría" />
-                    <ValidationMessage For="@(() => category.Name)" />
+                    <ValidationMessage For="@(() => categoryDTO.Name)" />
                 </div>
 
                 <div class="mb-3">
@@ -145,7 +146,7 @@ else
 }
 
 @code {
-    private Category? category;
+    private CategoryDTO? categoryDTO;
     private string? imageUrl;
     private string? fileName;
     private bool isLoading = false;
@@ -173,7 +174,15 @@ else
             return;
         }
 
-        category = responseHttp.Response;
+        var category = responseHttp.Response;
+        categoryDTO = new CategoryDTO
+        {
+            Id = category.Id,
+            Name = category.Name,
+            ImageString = category.Image != null && category.Image.Length > 0
+                ? Convert.ToBase64String(category.Image)
+                : null
+        };
 
         // Cargar imagen existente si hay una
         if (category?.Image != null && category.Image.Length > 0)
@@ -186,7 +195,7 @@ else
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
         var file = e.File;
-        if (file != null && category != null)
+        if (file != null && categoryDTO != null)
         {
             // Validar tamaño
             if (file.Size > 10 * 1024 * 1024)
@@ -215,7 +224,7 @@ else
 
                 // Convertir a Base64
                 imageUrl = Convert.ToBase64String(buffer);
-                category.Image = buffer;
+                categoryDTO.ImageString = imageUrl;
             }
             catch (Exception ex)
             {
@@ -232,7 +241,7 @@ else
 
     public async Task EditAsync()
     {
-        if (category is null || string.IsNullOrWhiteSpace(category.Name))
+        if (categoryDTO is null || string.IsNullOrWhiteSpace(categoryDTO.Name))
         {
             await sweetAlertService.FireAsync("Error", "El nombre de la categoría es obligatorio.", SweetAlertIcon.Error);
             return;
@@ -243,7 +252,7 @@ else
 
         try
         {
-            var responseHttp = await repository.Put("/api/categories", category);
+            var responseHttp = await repository.Put("/api/categories", categoryDTO);
             if (responseHttp.Error)
             {
                 var message = await responseHttp.GetErrorMessageAsync();
@@ -252,7 +261,7 @@ else
             }
 
             await sweetAlertService.FireAsync("Éxito", "Categoría actualizada exitosamente", SweetAlertIcon.Success);
-         
+
         }
         finally
         {
