@@ -13,11 +13,11 @@ namespace fume.api.Controllers
     [ApiController]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("/api/categories")]
-    public class CategoiresController : ControllerBase
+    public class CategoriesController : ControllerBase
     {
         private readonly DataContext _context;
 
-        public CategoiresController(DataContext context)
+        public CategoriesController(DataContext context)
         {
             _context = context;
         }
@@ -28,6 +28,7 @@ namespace fume.api.Controllers
         {
             var queryable = _context.categories
                 .Include(x => x.SubCategories)
+                .Include(x => x.ProductCategories)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
@@ -63,6 +64,7 @@ namespace fume.api.Controllers
         {
             var category = await _context.categories
                 .Include(x => x.SubCategories)
+                .Include(x => x.ProductCategories)
                 .FirstOrDefaultAsync(x => x.Id == id);
             if (category is null)
             {
