@@ -26,6 +26,7 @@ namespace fume.api.Controllers
         {
             var queryable = _context.SubCategories
                 .Include(x => x.Category)
+                .Include(x => x.ProductSubCategories)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
@@ -61,6 +62,7 @@ namespace fume.api.Controllers
         {
             var subCategory = await _context.SubCategories
                 .Include(x => x.Category)
+                .Include(x => x.ProductSubCategories)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (subCategory is null)
@@ -75,6 +77,7 @@ namespace fume.api.Controllers
         public async Task<ActionResult> GetByCategory(int categoryId)
         {
             var subCategories = await _context.SubCategories
+                .Include(x => x.ProductSubCategories)
                 .Where(x => x.CategoryId == categoryId)
                 .OrderBy(x => x.Name)
                 .ToListAsync();
