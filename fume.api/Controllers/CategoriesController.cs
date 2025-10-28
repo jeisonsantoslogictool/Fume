@@ -28,6 +28,7 @@ namespace fume.api.Controllers
         {
             var queryable = _context.categories
                 .Include(x => x.SubCategories)
+                .ThenInclude(x => x.ProductSubCategories)
                 .Include(x => x.ProductCategories)
                 .AsQueryable();
 
@@ -64,6 +65,7 @@ namespace fume.api.Controllers
         {
             var category = await _context.categories
                 .Include(x => x.SubCategories)
+                .ThenInclude(x => x.ProductSubCategories)
                 .Include(x => x.ProductCategories)
                 .FirstOrDefaultAsync(x => x.Id == id);
             if (category is null)
