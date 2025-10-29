@@ -217,56 +217,7 @@
 
                 <!-- Columna Derecha: Categorías con DropZone -->
                 <MudItem xs="12" md="6">
-                    <div class="form-section">
-                        <div class="section-title">
-                            <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Medium" />
-                            Gestión de Categorías
-                        </div>
-
-                        <MudDropContainer T="MultipleSelectorModel"
-                                          Items="@allCategories"
-                                          ItemsSelector="@((item, dropzone) => item.Selected == (dropzone == "selected"))"
-                                          ItemDropped="ItemUpdated"
-                                          Class="dropzone-container">
-                            <ChildContent>
-                                <MudGrid Spacing="2">
-                                    <MudItem xs="12" md="6">
-                                        <MudText Typo="Typo.subtitle2" Class="mb-2">
-                                            <MudIcon Icon="@Icons.Material.Filled.List" Size="Size.Small" Color="Color.Info" />
-                                            Categorías Disponibles
-                                        </MudText>
-                                        <MudDropZone T="MultipleSelectorModel"
-                                                     Identifier="available"
-                                                     Class="dropzone-available" />
-                                    </MudItem>
-
-                                    <MudItem xs="12" md="6">
-                                        <MudText Typo="Typo.subtitle2" Class="mb-2">
-                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
-                                            Categorías Seleccionadas
-                                        </MudText>
-                                        <MudDropZone T="MultipleSelectorModel"
-                                                     Identifier="selected"
-                                                     Class="dropzone-selected">
-                                            @if (!allCategories.Any(x => x.Selected))
-                                            {
-                                                <div class="empty-message">
-                                                    <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" Style="opacity: 0.3;" />
-                                                    <p>Arrastra categorías aquí para seleccionarlas</p>
-                                                </div>
-                                            }
-                                        </MudDropZone>
-                                    </MudItem>
-                                </MudGrid>
-                            </ChildContent>
-                            <ItemRenderer Context="item">
-                                <MudPaper Class="@($"category-item {(item.Selected ? "selected" : "")}")">
-                                    <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Size="Size.Small" />
-                                    @item.Value
-                                </MudPaper>
-                            </ItemRenderer>
-                        </MudDropContainer>
-                    </div>
+                    
 
                     <!-- Sección de Subcategorías -->
                     <div class="form-section">

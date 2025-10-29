@@ -27,6 +27,7 @@ else
     private ProductDTO productDTO = new ProductDTO
         {
             ProductCategoryIds = new List<int>(),
+            ProductSubCategoryIds = new List<int>(),
             ProductImages = new List<string>()
         };
 
@@ -149,6 +150,23 @@ else
 
     private async Task SaveChangesAsync()
     {
+        // Obtener las subcategorías seleccionadas del ProductForm
+        if (productDTO.ProductSubCategoryIds != null && productDTO.ProductSubCategoryIds.Any())
+        {
+            // Cargar todas las subcategorías para obtener sus CategoryId
+            var allSubCategories = selectedSubCategories.Concat(nonSelectedSubCategories).ToList();
+
+            // Obtener las categorías padre de las subcategorías seleccionadas
+            var categoryIds = allSubCategories
+                .Where(sc => productDTO.ProductSubCategoryIds.Contains(sc.Id))
+                .Select(sc => sc.CategoryId)
+                .Distinct()
+                .ToList();
+
+            // Asignar las categorías automáticamente
+            productDTO.ProductCategoryIds = categoryIds;
+        }
+
         var httpResponse = await repository.Put("/api/products", productDTO);
         if (httpResponse.Error)
         {

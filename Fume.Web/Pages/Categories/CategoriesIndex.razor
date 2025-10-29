@@ -155,6 +155,118 @@
     .modal-header-gradient {
         background: linear-gradient(135deg, #2196f3 0%, #e0e0e0 100%) !important color: white !important;
     }
+
+    /* Custom Bootstrap Tabs */
+    .tabs-container {
+        margin-top: 20px;
+        margin-bottom: 30px;
+    }
+
+    .custom-tabs {
+        border: none;
+        background: white;
+        border-radius: 12px 12px 0 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 10px 10px 0 10px;
+        gap: 10px;
+    }
+
+    .custom-tabs .nav-item {
+        margin-bottom: 0;
+    }
+
+    .custom-tabs .nav-link {
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 15px 30px;
+        border-radius: 10px 10px 0 0;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+    }
+
+    .custom-tabs .nav-link i {
+        font-size: 1.2rem;
+    }
+
+    .custom-tabs .nav-link:hover {
+        background: #f8f9fa;
+        color: #2196F3;
+    }
+
+    .custom-tabs .nav-link.active {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    .custom-tabs .nav-link.active:hover {
+        color: white;
+    }
+
+    .tab-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-left: 5px;
+    }
+
+    .custom-tabs .nav-link.active .tab-badge {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .custom-tab-content {
+        background: white;
+        border-radius: 0 0 12px 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        min-height: 400px;
+    }
+
+    .tab-pane {
+        animation: fadeIn 0.4s ease-in;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .custom-tabs .nav-link {
+            padding: 12px 20px;
+            font-size: 0.9rem;
+        }
+
+        .custom-tabs .nav-link span {
+            display: none;
+        }
+
+        .custom-tabs .nav-link i {
+            font-size: 1.5rem;
+        }
+
+        .tab-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.7rem;
+            padding: 1px 6px;
+        }
+    }
 </style>
 
 @if (categories is null)
@@ -200,82 +312,216 @@ else
             </div>
         </div>
 
-        <!-- Search Section -->
-        <div class="search-card">
-            <MudGrid Spacing="3" Justify="Justify.SpaceBetween">
-                <MudItem xs="12" md="8">
-                    <MudTextField @bind-Value="Filter"
-                                  Label="Buscar categorías"
-                                  Variant="Variant.Outlined"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Search"
-                                  FullWidth="true"
-                                  OnKeyUp="HandleKeyPress"
-                                  Placeholder="Ingrese el nombre de la categoría..." />
-                </MudItem>
-                <MudItem xs="12" md="4" Class="d-flex align-items-center gap-2">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Info"
-                               StartIcon="@Icons.Material.Filled.FilterList"
-                               FullWidth="true"
-                               OnClick="ApplyFilterAsync">
-                        Filtrar
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Error"
-                               StartIcon="@Icons.Material.Filled.Clear"
-                               FullWidth="true"
-                               OnClick="CleanFilterAsync">
-                        Limpiar
-                    </MudButton>
-                </MudItem>
-            </MudGrid>
-        </div>
-
-        <!-- Categories Grid -->
-        <MudGrid>
-            @foreach (var category in categories)
-            {
-                <MudItem xs="12" md="6" lg="4">
-                    <div class="category-card">
-                        <div class="category-name">
-                            @if (category.Image != null && category.Image.Length > 0)
-                            {
-                                <img src="data:image/png;base64,@category.ImageString"
-                                     style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover;"
-                                     alt="@category.Name" />
-                            }
-                            else
-                            {
-                                <div class="category-icon">
-                                    <MudIcon Icon="@Icons.Material.Filled.Label" />
-                                </div>
-                            }
-                            <div style="flex: 1;">
+        <!-- Tabs Section -->
+      <div class="tabs-container">
+           <ul class="nav nav-tabs custom-tabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                 <button class="nav-link active"
+                    id="categories-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#categories"
+                    type="button"
+                    role="tab"
+                    aria-controls="categories"
+                    aria-selected="true">
+                 <i class="oi oi-list"></i>
+                 <span>Categorías</span>
+                 @if (categories != null)
+                 {
+                 <span class="tab-badge">@categories.Count</span>
+                 }
+                 </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                 <button class="nav-link"
+                    id="subcategories-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#subcategories"
+                    type="button"
+                    role="tab"
+                    aria-controls="subcategories"
+                    aria-selected="false">
+                 <i class="oi oi-tag"></i>
+                 <span>Subcategorías</span>
+                 @if (allSubCategories != null)
+                 {
+                 <span class="tab-badge">@allSubCategories.Count</span>
+                 }
+                 </button>
+              </li>
+           </ul>
+           <div class="tab-content custom-tab-content">
+              <div class="tab-pane fade show active"
+                 id="categories"
+                 role="tabpanel"
+                 aria-labelledby="categories-tab">
+                 <!-- Search Section for Categories -->
+                 <div class="search-card">
+                    <MudGrid Spacing="3" Justify="Justify.SpaceBetween">
+                       <MudItem xs="12" md="8">
+                          <MudTextField @bind-Value="Filter"
+                             Label="Buscar categorías"
+                             Variant="Variant.Outlined"
+                             Adornment="Adornment.Start"
+                             AdornmentIcon="@Icons.Material.Filled.Search"
+                             FullWidth="true"
+                             OnKeyUp="HandleKeyPress"
+                             Placeholder="Ingrese el nombre de la categoría..." />
+                       </MudItem>
+                       <MudItem xs="12" md="4" Class="d-flex align-items-center gap-2">
+                          <MudButton Variant="Variant.Filled"
+                             Color="Color.Info"
+                             StartIcon="@Icons.Material.Filled.FilterList"
+                             FullWidth="true"
+                             OnClick="ApplyFilterAsync">
+                             Filtrar
+                          </MudButton>
+                          <MudButton Variant="Variant.Outlined"
+                             Color="Color.Error"
+                             StartIcon="@Icons.Material.Filled.Clear"
+                             FullWidth="true"
+                             OnClick="CleanFilterAsync">
+                             Limpiar
+                          </MudButton>
+                       </MudItem>
+                    </MudGrid>
+                 </div>
+                 <!-- Categories Grid -->
+                 <MudGrid Class="mt-3">
+                    @foreach (var category in categories)
+                    {
+                    <MudItem xs="12" md="6" lg="4">
+                       <div class="category-card">
+                          <div class="category-name">
+                             @if (category.Image != null && category.Image.Length > 0)
+                             {
+                             <img src="data:image/png;base64,@category.ImageString"
+                                style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover;"
+                                alt="@category.Name" />
+                             }
+                             else
+                             {
+                             <div class="category-icon">
+                                <MudIcon Icon="@Icons.Material.Filled.Label" />
+                             </div>
+                             }
+                             <div style="flex: 1;">
                                 <div>@category.Name</div>
                                 <span class="stats-badge">@category.ProductCategoriesNumber Productos</span>
-                            </div>
-                        </div>
-                        <div class="category-actions">
-                            <MudButton Variant="Variant.Filled"
-                                       Color="Color.Warning"
-                                       StartIcon="@Icons.Material.Filled.Edit"
-                                       Size="Size.Small"
-                                       OnClick="@(() => ShowModal(category.Id, true))">
+                             </div>
+                          </div>
+                          <div class="category-actions">
+                             <MudButton Variant="Variant.Filled"
+                                Color="Color.Info"
+                                StartIcon="@Icons.Material.Filled.Visibility"
+                                Size="Size.Small"
+                                OnClick="@(() => ShowDetailModal(category.Id))">
+                                Ver
+                             </MudButton>
+                             <MudButton Variant="Variant.Filled"
+                                Color="Color.Warning"
+                                StartIcon="@Icons.Material.Filled.Edit"
+                                Size="Size.Small"
+                                OnClick="@(() => ShowModal(category.Id, true))">
                                 Editar
-                            </MudButton>
-                            <MudButton Variant="Variant.Filled"
-                                       Color="Color.Error"
-                                       StartIcon="@Icons.Material.Filled.Delete"
-                                       Size="Size.Small"
-                                       OnClick="@(() => Delete(category.Id))">
+                             </MudButton>
+                             <MudButton Variant="Variant.Filled"
+                                Color="Color.Error"
+                                StartIcon="@Icons.Material.Filled.Delete"
+                                Size="Size.Small"
+                                OnClick="@(() => Delete(category.Id))">
                                 Eliminar
-                            </MudButton>
+                             </MudButton>
+                          </div>
+                       </div>
+                    </MudItem>
+                    }
+                 </MudGrid>
+              </div>
+
+              <div class="tab-pane fade"
+                 id="subcategories"
+                 role="tabpanel"
+                 aria-labelledby="subcategories-tab">
+                  <!-- Search Section for SubCategories -->
+                  <div class="search-card">
+                     <MudGrid Spacing="3" Justify="Justify.SpaceBetween">
+                        <MudItem xs="12" md="8">
+                           <MudTextField @bind-Value="SubCategoryFilter"
+                              Label="Buscar subcategorías"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              FullWidth="true"
+                              OnKeyUp="HandleSubCategoryKeyPress"
+                              Placeholder="Ingrese el nombre de la subcategoría..." />
+                        </MudItem>
+                        <MudItem xs="12" md="4" Class="d-flex align-items-center gap-2">
+                           <MudButton Variant="Variant.Filled"
+                              Color="Color.Info"
+                              StartIcon="@Icons.Material.Filled.FilterList"
+                              FullWidth="true"
+                              OnClick="ApplySubCategoryFilterAsync">
+                              Filtrar
+                           </MudButton>
+                           <MudButton Variant="Variant.Outlined"
+                              Color="Color.Error"
+                              StartIcon="@Icons.Material.Filled.Clear"
+                              FullWidth="true"
+                              OnClick="CleanSubCategoryFilterAsync">
+                              Limpiar
+                           </MudButton>
+                        </MudItem>
+                     </MudGrid>
+                  </div>
+                  <!-- SubCategories Grid -->
+                  <MudGrid Class="mt-3">
+                     @if (allSubCategories != null)
+                     {
+                     @foreach (var subCategory in allSubCategories)
+                     {
+                     <MudItem xs="12" md="6" lg="4">
+                        <div class="category-card">
+                           <div class="category-name">
+                              @if (subCategory.Image != null && subCategory.Image.Length > 0)
+                              {
+                              <img src="data:image/png;base64,@subCategory.ImageString"
+                                 style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover;"
+                                 alt="@subCategory.Name" />
+                              }
+                              else
+                              {
+                              <div class="category-icon" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);">
+                                 <MudIcon Icon="@Icons.Material.Filled.Label" Color="Color.Surface" />
+                              </div>
+                              }
+                              <div style="flex: 1;">
+                                 <div>@subCategory.Name</div>
+                                 <span class="stats-badge">
+                                 @subCategory.ProductSubCategoriesNumber Productos
+                                 </span>
+                                 <span class="stats-badge" style="background: #e3f2fd; color: #1976d2;">
+                                 Categoría: @subCategory.Category?.Name
+                                 </span>
+                              </div>
+                           </div>
+                           <div class="category-actions">
+                              <MudButton Variant="Variant.Filled"
+                                 Color="Color.Error"
+                                 StartIcon="@Icons.Material.Filled.Delete"
+                                 Size="Size.Small"
+                                 OnClick="@(() => DeleteSubCategory(subCategory.Id))">
+                                 Eliminar
+                              </MudButton>
+                           </div>
                         </div>
-                    </div>
-                </MudItem>
-            }
-        </MudGrid>
+                     </MudItem>
+                     }
+                     }
+                  </MudGrid>
+               </div>
+            </div>
+        </div>
 
         <!-- Modal Crear Categoría -->
         <Modal @ref="modalCreate"
@@ -334,13 +580,116 @@ else
             </FooterTemplate>
         </Modal>
 
+        <!-- Modal Detalle de Categoría -->
+        <Modal @ref="modalDetail"
+               Title="@($"Detalle de Categoría: {categoryDetail?.Name}")"
+               IsVerticallyCentered="true"
+               Size="BlazorBootstrap.ModalSize.ExtraLarge"
+               HeaderCssClass="modal-header-gradient">
+            <BodyTemplate>
+                @if (categoryDetail != null)
+                {
+                    <div class="container-fluid">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0"><MudIcon Icon="@Icons.Material.Filled.Info" /> Información General</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="text-center mb-3">
+                                            @if (categoryDetail.Image != null && categoryDetail.Image.Length > 0)
+                                            {
+                                                <img src="data:image/png;base64,@categoryDetail.ImageString"
+                                                     style="width: 150px; height: 150px; border-radius: 15px; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+                                                     alt="@categoryDetail.Name" />
+                                            }
+                                            else
+                                            {
+                                                <div style="width: 150px; height: 150px; background: #e3f2fd; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" Color="Color.Primary" />
+                                                </div>
+                                            }
+                                        </div>
+                                        <h4 class="text-center mb-3">@categoryDetail.Name</h4>
+                                        <div class="d-flex justify-content-around">
+                                            <div class="text-center">
+                                                <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Success" />
+                                                <p class="mb-0"><strong>@categoryDetail.ProductCategoriesNumber</strong></p>
+                                                <small class="text-muted">Productos</small>
+                                            </div>
+                                            <div class="text-center">
+                                                <MudIcon Icon="@Icons.Material.Filled.Category" Color="Color.Info" />
+                                                <p class="mb-0"><strong>@categoryDetail.SubCategoriesNumber</strong></p>
+                                                <small class="text-muted">Subcategorías</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card shadow-sm">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0"><MudIcon Icon="@Icons.Material.Filled.Category" /> Subcategorías</h5>
+                                    </div>
+                                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                        @if (categoryDetail.SubCategories != null && categoryDetail.SubCategories.Any())
+                                        {
+                                            <div class="list-group">
+                                                @foreach (var subCategory in categoryDetail.SubCategories)
+                                                {
+                                                    <div class="list-group-item d-flex align-items-center gap-3 mb-2" style="border-radius: 8px; border: 1px solid #e0e0e0;">
+                                                        @if (subCategory.Image != null && subCategory.Image.Length > 0)
+                                                        {
+                                                            <img src="data:image/png;base64,@subCategory.ImageString"
+                                                                 style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;"
+                                                                 alt="@subCategory.Name" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <div style="width: 50px; height: 50px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                                                <MudIcon Icon="@Icons.Material.Filled.Label" Color="Color.Default" Size="Size.Small" />
+                                                            </div>
+                                                        }
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-0">@subCategory.Name</h6>
+                                                            <small class="text-muted">@subCategory.ProductSubCategoriesNumber productos</small>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center py-5">
+                                                <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" Style="opacity: 0.3;" />
+                                                <p class="text-muted mt-2">No hay subcategorías asociadas</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </BodyTemplate>
+            <FooterTemplate>
+                <Button Color="ButtonColor.Secondary" @onclick="OnHideDetailModalClick">
+                    <i class="oi oi-x"></i> Cerrar
+                </Button>
+            </FooterTemplate>
+        </Modal>
+
     </MudContainer>
 }
 
 @code {
     public List<Category>? categories { get; set; }
+    public List<SubCategory>? allSubCategories { get; set; }
+    private List<SubCategory>? filteredSubCategories { get; set; }
     private int currentPage = 1;
     private int totalPages;
+    private int activeTabIndex = 0;
 
     [Parameter]
     [SupplyParameterFromQuery]
@@ -350,17 +699,22 @@ else
     [SupplyParameterFromQuery]
     public string Filter { get; set; } = "";
 
+    public string SubCategoryFilter { get; set; } = "";
+
     private Modal modalCreate = default!;
     private Modal modalEdit = default!;
     private Modal modalSubCategory = default!;
+    private Modal modalDetail = default!;
     private CategoryCreate categoryCreateRef = default!;
     private CategoryEdit categoryEditRef = default!;
     private SubCategoryCreate subCategoryCreateRef = default!;
     private int selectedCategoryId = 0;
+    private Category? categoryDetail = null;
 
     protected async override Task OnInitializedAsync()
     {
         await LoadAsync();
+        await LoadSubCategoriesAsync();
     }
 
     private async Task OnHideCreateModalClick()
@@ -379,6 +733,7 @@ else
     {
         await modalSubCategory?.HideAsync();
         await LoadAsync();
+        await LoadSubCategoriesAsync();
     }
 
     private async Task OnSaveClick()
@@ -426,6 +781,26 @@ else
     private async Task ShowSubCategoryModal()
     {
         await modalSubCategory?.ShowAsync();
+    }
+
+    private async Task ShowDetailModal(int id)
+    {
+        // Cargar los detalles completos de la categoría con sus subcategorías
+        var responseHttp = await repository.Get<Category>($"api/categories/{id}");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        categoryDetail = responseHttp.Response;
+        await modalDetail?.ShowAsync();
+    }
+
+    private async Task OnHideDetailModalClick()
+    {
+        await modalDetail?.HideAsync();
+        categoryDetail = null;
     }
 
     private async Task SelectedPageAsync(int page)
@@ -517,6 +892,92 @@ else
     {
         Filter = string.Empty;
         await ApplyFilterAsync();
+    }
+
+    // SubCategories Methods
+    private async Task LoadSubCategoriesAsync()
+    {
+        var response = await repository.Get<List<SubCategory>>("/api/subcategories");
+        if (response.Error)
+        {
+            var message = await response.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        allSubCategories = response.Response;
+    }
+
+    private async Task ApplySubCategoryFilterAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SubCategoryFilter))
+        {
+            await LoadSubCategoriesAsync();
+            return;
+        }
+
+        allSubCategories = allSubCategories?
+            .Where(x => x.Name.ToLower().Contains(SubCategoryFilter.ToLower()))
+            .ToList();
+    }
+
+    private async Task CleanSubCategoryFilterAsync()
+    {
+        SubCategoryFilter = string.Empty;
+        await LoadSubCategoriesAsync();
+    }
+
+    private async Task HandleSubCategoryKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplySubCategoryFilterAsync();
+        }
+    }
+
+    private async Task DeleteSubCategory(int subCategoryId)
+    {
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+        {
+            Title = "Confirmación",
+            Text = "¿Está seguro que quiere borrar esta subcategoría?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true
+        });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await repository.Delete($"api/subcategories/{subCategoryId}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/categories");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            var toast = sweetAlertService.Mixin(new SweetAlertOptions
+            {
+                Toast = true,
+                Position = SweetAlertPosition.TopEnd,
+                ShowConfirmButton = false,
+                Timer = 5000
+            });
+            await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Subcategoría eliminada correctamente!");
+            await LoadSubCategoriesAsync();
+        }
     }
 
     private async Task ApplyFilterAsync()

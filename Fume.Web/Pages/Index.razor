@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @inject IRepository repository
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
@@ -7,6 +7,7 @@
 @layout MainLayout
 @using MudBlazor
 @using Fume.Web.Helpers
+
 <style type="text/css">
     /* Header Section */
     .header-section {
@@ -61,7 +62,7 @@
         right: 5px;
         top: 50%;
         transform: translateY(-50%);
-            background-color: #1b70b3;
+        background-color: #1b70b3;
         border: none;
         border-radius: 20px;
         padding: 8px 20px;
@@ -123,48 +124,161 @@
         text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     }
 
-    /* Product Cards */
-    .card {
+    /* Breadcrumb */
+    .breadcrumb-nav {
+        background: #f8f9fa;
+        padding: 15px 0;
+        margin-bottom: 30px;
+        border-radius: 8px;
+    }
+
+    .breadcrumb-nav a {
+        color: #2196F3;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s;
+    }
+
+    .breadcrumb-nav a:hover {
+        color: #1976D2;
+        text-decoration: underline;
+    }
+
+    /* Category/SubCategory Grid */
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        padding: 20px 0;
+        
+    }
+
+    .category-item {
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        border-radius: 8px;
-        font-family: sans-serif;
-        margin: 10px;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 20px;
+        cursor: pointer;
         transition: all 0.3s ease;
-        overflow: hidden;
+        border-right: 1px solid #e0e0e0;
+        border-bottom: 1px solid #e0e0e0;
+     
     }
 
-    .card:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    .category-item:nth-child(4n) {
+        border-right: none;
+    }
+
+    .category-item:hover {
+       
+        transform: scale(1.05);
+    }
+
+    .category-image {
+       
+        overflow: hidden;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+       
+    }
+
+    .category-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .category-item:hover .category-image img {
+        transform: scale(1.1);
+    }
+
+    .category-image-placeholder {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+    }
+
+    .category-info {
+        text-align: center;
+    }
+
+    .category-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .category-count {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    /* Product Cards */
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 25px;
+        padding: 20px 0;
+    }
+
+    .product-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-card:hover {
         transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
 
-    .zoom {
+    .product-image {
+        width: 100%;
+        height: 220px;
         overflow: hidden;
-        background-color: #f8f9fa;
-        height: 200px;
+        background: #f8f9fa;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    .zoom img {
-        transition: transform 0.3s ease;
+    .product-image img {
+        max-width: 100%;
+        max-height: 100%;
         object-fit: contain;
+        transition: transform 0.3s ease;
     }
 
-    .card:hover .zoom img {
+    .product-card:hover .product-image img {
         transform: scale(1.1);
     }
 
-    .card-title {
-        font-size: 1rem;
+    .product-info {
+        padding: 20px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-name {
+        font-size: 1.1rem;
         font-weight: 600;
         color: #2c3e50;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         min-height: 48px;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -172,9 +286,10 @@
         overflow: hidden;
     }
 
-    .card-text {
-        font-size: 0.85rem;
+    .product-description {
+        font-size: 0.9rem;
         color: #6c757d;
+        margin-bottom: 15px;
         min-height: 40px;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -182,21 +297,33 @@
         overflow: hidden;
     }
 
-    .card-body {
-        padding: 15px;
-    }
-
-    .card-footer {
-        background-color: #fff;
-        border-top: 1px solid #e0e0e0;
-        padding: 15px;
-    }
-
-    .price-tag {
-        font-size: 1.5rem;
+    .product-price {
+        font-size: 1.75rem;
         font-weight: bold;
         color: #27ae60;
-        margin: 10px 0;
+        margin-bottom: 15px;
+    }
+
+    .product-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: auto;
+    }
+
+    .section-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .section-subtitle {
+        font-size: 1.1rem;
+        color: #6c757d;
+        margin-bottom: 30px;
     }
 
     @@media (max-width: 768px) {
@@ -221,6 +348,29 @@
         .banner-content p {
             font-size: 1rem;
         }
+
+        .category-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .category-item:nth-child(2n) {
+            border-right: none;
+        }
+
+        .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .category-grid {
+            grid-template-columns: repeat(1, 1fr);
+        }
+
+        .category-item {
+            border-right: none;
+        }
     }
 </style>
 
@@ -228,16 +378,16 @@
 <div class="header-section">
     <div class="header-container">
         <div class="logo-section">
-            <img src="/Logo.png" alt="Fume Logo" @onclick="@(() => navigationManager.NavigateTo("/"))" />
+            <img src="/Logo.png" alt="Fume Logo" @onclick="@(() => GoToHome())" />
         </div>
 
         <div class="search-section">
             <div class="smart-search">
                 <input type="text"
-                       placeholder="Buscar productos, marcas o categorías..."
+                       placeholder="Buscar productos..."
                        @bind-value="Filter"
                        @onkeyup="HandleKeyPress" />
-                <button @onclick="ApplyFilterAsync">
+                <button @onclick="SearchProducts">
                     <i class="oi oi-magnifying-glass"></i> Buscar
                 </button>
             </div>
@@ -278,67 +428,202 @@
     </div>
 </div>
 
-@if (Products is null)
+@if (loading)
 {
     <div class="spinner" />
 }
 else
 {
-    <div class="container">
-        <div class="mb-3 d-flex justify-content-between align-items-center">
-            <h2>Nuestros Productos</h2>
-            @if (!string.IsNullOrEmpty(Filter))
-            {
-                <button type="button" class="btn btn-outline-danger" @onclick="CleanFilterAsync">
-                    <i class="oi oi-x" /> Limpiar búsqueda
-                </button>
-            }
-        </div>
-
-      
-    <div class="row row-cols-1 row-cols-md-4 g-4 mt-1">
-        @foreach (var product in Products!)
+    <div class="container" style="max-width: 1400px;">
+        <!-- Breadcrumb Navigation -->
+        @if (currentView != ViewType.Categories)
         {
-            <div class="col">
-                <div class="card h-100">
-                    <div class="text-center zoom">
-                        @if (product.ProductImages != null && product.ProductImages.Any())
+            <div class="breadcrumb-nav">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="#" @onclick="@(() => GoToHome())" @onclick:preventDefault>
+                                <i class="oi oi-home"></i> Inicio
+                            </a>
+                        </li>
+                        @if (currentView == ViewType.SubCategories && selectedCategory != null)
                         {
-                            var firstImage = Convert.ToBase64String(product.ProductImages.First().Imagefile);
-                            <img src="data:image/png;base64,@firstImage" style="height:150px; max-width:200px;" class="text-center" alt=@product.Name />
+                            <li class="breadcrumb-item active">@selectedCategory.Name</li>
                         }
-                        else
+                        @if (currentView == ViewType.Products && selectedSubCategory != null)
                         {
-                            <img src="/images/no-image.png" style="height:150px; max-width:200px;" class="text-center" alt="Sin imagen" />
+                            <li class="breadcrumb-item">
+                                <a href="#" @onclick="@(() => GoToSubCategories(selectedCategory!))" @onclick:preventDefault>
+                                    @selectedCategory?.Name
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item active">@selectedSubCategory.Name</li>
                         }
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">@product.Name</h5>
-                        <p class="card-text">@product.Description</p>
-                        <div class="price-tag">@FormatHelper.FormatPrice(product.Price)</div>
-                    </div>
-                    <div class="card-footer text-center">
-                        <a href="/orders/details/@product.Id" class="btn btn-sm btn-secondary"><i class="oi oi-info" /> Detalles</a>
-                        <button class="btn btn-sm btn-primary" @onclick=@(() => AddToCartAsync(product.Id))><i class="oi oi-plus" /> Agregar al Carro</button>
-                    </div>
-                </div>
+                    </ol>
+                </nav>
             </div>
         }
-    </div>
+
+        <!-- Categories View -->
+        @if (currentView == ViewType.Categories)
+        {
+            <div class="section-title">
+                <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" Color="Color.Primary" />
+                Explora Nuestras Categorías
+            </div>
+            <p class="section-subtitle">Selecciona una categoría para ver sus subcategorías</p>
+
+            @if (categories != null && categories.Any())
+            {
+                <div class="category-grid">
+                    @foreach (var category in categories)
+                    {
+                        <div class="category-item" @onclick="@(() => GoToSubCategories(category))">
+                            <div class="category-image">
+                                @if (category.Image != null && category.Image.Length > 0)
+                                {
+                                    <img src="data:image/png;base64,@category.ImageString" alt="@category.Name" />
+                                }
+                                else
+                                {
+                                    <div class="category-image-placeholder">
+                                        <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" Color="Color.Surface" />
+                                    </div>
+                                }
+                            </div>
+                            <div class="category-info">
+                                <div class="category-name">@category.Name</div>
+                                <div class="category-count">
+                                    @category.SubCategoriesNumber subcategorías
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" Style="opacity: 0.3;" />
+                    <p class="text-muted mt-3">No hay categorías disponibles</p>
+                </div>
+            }
+        }
+
+        <!-- SubCategories View -->
+        @if (currentView == ViewType.SubCategories)
+        {
+            <div class="section-title">
+                <MudIcon Icon="@Icons.Material.Filled.Label" Size="Size.Large" Color="Color.Info" />
+                Subcategorías de @selectedCategory?.Name
+            </div>
+            <p class="section-subtitle">Selecciona una subcategoría para ver sus productos</p>
+
+            @if (subCategories != null && subCategories.Any())
+            {
+                <div class="category-grid">
+                    @foreach (var subCategory in subCategories)
+                    {
+                        <div class="category-item" @onclick="@(() => GoToProducts(subCategory))">
+                            <div class="category-image">
+                                @if (subCategory.Image != null && subCategory.Image.Length > 0)
+                                {
+                                    <img src="data:image/png;base64,@subCategory.ImageString" alt="@subCategory.Name" />
+                                }
+                                else
+                                {
+                                    <div class="category-image-placeholder" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);">
+                                        <MudIcon Icon="@Icons.Material.Filled.Label" Size="Size.Large" Color="Color.Surface" />
+                                    </div>
+                                }
+                            </div>
+                            <div class="category-info">
+                                <div class="category-name">@subCategory.Name</div>
+                                <div class="category-count">
+                                    @subCategory.ProductSubCategoriesNumber productos
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <MudIcon Icon="@Icons.Material.Filled.Label" Size="Size.Large" Style="opacity: 0.3;" />
+                    <p class="text-muted mt-3">No hay subcategorías disponibles en esta categoría</p>
+                </div>
+            }
+        }
+
+        <!-- Products View -->
+        @if (currentView == ViewType.Products)
+        {
+            <div class="section-title">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Large" Color="Color.Success" />
+                Productos de @selectedSubCategory?.Name
+            </div>
+            <p class="section-subtitle">Explora nuestra selección de productos</p>
+
+            @if (products != null && products.Any())
+            {
+                <div class="product-grid">
+                    @foreach (var product in products)
+                    {
+                        <div class="product-card">
+                            <div class="product-image">
+                                @if (product.ProductImages != null && product.ProductImages.Any())
+                                {
+                                    var firstImage = Convert.ToBase64String(product.ProductImages.First().Imagefile);
+                                    <img src="data:image/png;base64,@firstImage" alt="@product.Name" />
+                                }
+                                else
+                                {
+                                    <img src="/images/no-image.png" alt="Sin imagen" />
+                                }
+                            </div>
+                            <div class="product-info">
+                                <div class="product-name">@product.Name</div>
+                                <div class="product-description">@product.Description</div>
+                                <div class="product-price">@FormatHelper.FormatPrice(product.Price)</div>
+                                <div class="product-actions">
+                                    <a href="/orders/details/@product.Id" class="btn btn-sm btn-secondary flex-grow-1">
+                                        <i class="oi oi-info"></i> Detalles
+                                    </a>
+                                    <button class="btn btn-sm btn-primary flex-grow-1" @onclick="@(() => AddToCartAsync(product.Id))">
+                                        <i class="oi oi-plus"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Large" Style="opacity: 0.3;" />
+                    <p class="text-muted mt-3">No hay productos disponibles en esta subcategoría</p>
+                </div>
+            }
+        }
     </div>
 }
 
 @code {
-    private int currentPage = 1;
-    private int totalPages;
+    private enum ViewType { Categories, SubCategories, Products }
+
+    private ViewType currentView = ViewType.Categories;
+    private bool loading = true;
     private int counter = 0;
     private bool isAuthenticated;
 
-    public List<Product>? Products { get; set; }
+    private List<Category>? categories;
+    private List<SubCategory>? subCategories;
+    private List<Product>? products;
 
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public string Page { get; set; } = "";
+    private Category? selectedCategory;
+    private SubCategory? selectedSubCategory;
 
     [Parameter]
     [SupplyParameterFromQuery]
@@ -347,12 +632,10 @@ else
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
 
-
     protected async override Task OnInitializedAsync()
     {
-        await LoadAsync();
+        await LoadCategoriesAsync();
     }
-  
 
     protected async override Task OnParametersSetAsync()
     {
@@ -381,64 +664,105 @@ else
         counter = responseHttp.Response;
     }
 
-    private async Task SelectedPageAsync(int page)
+    private async Task LoadCategoriesAsync()
     {
-        currentPage = page;
-        await LoadAsync(page);
+        loading = true;
+        var response = await repository.Get<List<Category>>("/api/categories");
+
+        if (response.Error)
+        {
+            var message = await response.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            loading = false;
+            return;
+        }
+
+        categories = response.Response;
+        currentView = ViewType.Categories;
+        loading = false;
     }
 
-    private async Task LoadAsync(int page = 1)
+    private async Task GoToSubCategories(Category category)
     {
-        if (!string.IsNullOrWhiteSpace(Page))
+        loading = true;
+        selectedCategory = category;
+
+        var response = await repository.Get<List<SubCategory>>($"/api/subcategories/bycategory/{category.Id}");
+
+        if (response.Error)
         {
-            page = Convert.ToInt32(Page);
+            var message = await response.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            loading = false;
+            return;
         }
 
-        string url1 = string.Empty;
-        string url2 = string.Empty;
-
-        if (string.IsNullOrEmpty(Filter))
-        {
-            url1 = $"api/products?page={page}&RecordsNumber=8";
-            url2 = $"api/products/totalPages/?RecordsNumber=8";
-        }
-        else
-        {
-            url1 = $"api/products?page={page}&filter={Filter}&RecordsNumber=8";
-            url2 = $"api/products/totalPages?filter={Filter}&RecordsNumber=8";
-        }
-
-        try
-        {
-            var responseHppt = await repository.Get<List<Product>>(url1);
-            var responseHppt2 = await repository.Get<int>(url2);
-            Products = responseHppt.Response!;
-            totalPages = responseHppt2.Response!;
-        }
-        catch (Exception ex)
-        {
-            await sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
-        }
+        subCategories = response.Response;
+        currentView = ViewType.SubCategories;
+        loading = false;
     }
 
-    private async Task CleanFilterAsync()
+    private async Task GoToProducts(SubCategory subCategory)
     {
+        loading = true;
+        selectedSubCategory = subCategory;
+
+        // Cargar productos que tengan esta subcategoría
+        var response = await repository.Get<List<Product>>($"/api/products/subcategory/{subCategory.Id}");
+
+        if (response.Error)
+        {
+            var message = await response.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            loading = false;
+            return;
+        }
+
+        products = response.Response;
+        currentView = ViewType.Products;
+        loading = false;
+    }
+
+    private async Task GoToHome()
+    {
+        selectedCategory = null;
+        selectedSubCategory = null;
+        subCategories = null;
+        products = null;
         Filter = string.Empty;
-        await ApplyFilterAsync();
+        await LoadCategoriesAsync();
     }
 
-    private async Task ApplyFilterAsync()
+    private async Task SearchProducts()
     {
-        int page = 1;
-        await LoadAsync(page);
-        await SelectedPageAsync(page);
+        if (string.IsNullOrWhiteSpace(Filter))
+        {
+            return;
+        }
+
+        loading = true;
+        var response = await repository.Get<List<Product>>($"/api/products?filter={Filter}");
+
+        if (response.Error)
+        {
+            var message = await response.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            loading = false;
+            return;
+        }
+
+        products = response.Response;
+        currentView = ViewType.Products;
+        selectedCategory = null;
+        selectedSubCategory = null;
+        loading = false;
     }
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            await ApplyFilterAsync();
+            await SearchProducts();
         }
     }
 
@@ -457,19 +781,6 @@ else
             await toast1.FireAsync(icon: SweetAlertIcon.Error, message: "Debes haber iniciado sesión para poder agregar productos al carro de compras.");
             return;
         }
-
-        // var temporalSaleDTO = new TemporalSaleDTO
-        // {
-        //     ProductId = productId
-        // };
-
-        // var httpResponse = await repository.Post("/api/temporalSales", temporalSaleDTO);
-        // if (httpResponse.Error)
-        // {
-        //     var message = await httpResponse.GetErrorMessageAsync();
-        //     await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-        //     return;
-        // }
 
         await LoadCounterAsync();
 

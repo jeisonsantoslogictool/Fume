@@ -24,6 +24,7 @@ namespace fume.api.Controllers
 
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.categories
