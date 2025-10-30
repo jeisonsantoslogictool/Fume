@@ -111,7 +111,7 @@
 
 <NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation"></NavigationLock>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4" Style="height: 95vh !important; ">
     <EditForm EditContext="editContext" OnValidSubmit="OnDataAnnotationsValidatedAsync">
         <DataAnnotationsValidator />
 
@@ -201,13 +201,13 @@
                                 <MudButton Variant="Variant.Outlined"
                                            Color="Color.Primary"
                                            StartIcon="@Icons.Material.Filled.Add"
-                                           OnClick="AddImageAction">
-                                    Agregar Imágenes
+                                           OnClick="@(async () => await AddImageAction.InvokeAsync())">
+                                    Agregar Imagen
                                 </MudButton>
                                 <MudButton Variant="Variant.Outlined"
                                            Color="Color.Error"
                                            StartIcon="@Icons.Material.Filled.Delete"
-                                           OnClick="RemoveImageAction">
+                                           OnClick="@(async () => await RemoveImageAction.InvokeAsync())">
                                     Eliminar Última Imagen
                                 </MudButton>
                             </div>
@@ -272,16 +272,23 @@
                     </div>
                 </MudItem>
             </MudGrid>
+            @if (IsEdit && ProductDTO.ProductImages is not null && ProductDTO.ProductImages.Any())
+            {
+                <MudGrid Class="mt-4">
+                    <MudItem xs="12">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <div class="section-title mb-3">
+                                <MudIcon Icon="@Icons.Material.Filled.Collections" Size="Size.Medium" />
+                                Imágenes del Producto
+                            </div>
+                            <CarouseView Images="ProductDTO.ProductImages" />
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            }
         </div>
     </EditForm>
 </MudContainer>
-
-@if (IsEdit && ProductDTO.ProductImages is not null)
-{
-    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-        <CarouseView Images="ProductDTO.ProductImages" />
-    </MudContainer>
-}
 
 @code {
     private EditContext editContext = null!;

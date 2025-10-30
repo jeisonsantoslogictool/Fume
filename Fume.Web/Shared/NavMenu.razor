@@ -1,14 +1,15 @@
 ﻿<MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home" IconColor="Color.Info">
-        Inicio
-    </MudNavLink>
 
+    <MudNavLink Href="/" Icon="@Icons.Material.Filled.ShoppingCart" IconColor="Color.Info">
+        Fume
+    </MudNavLink>
     <MudNavLink Href="/catalog" Icon="@Icons.Material.Filled.ShoppingBag" IconColor="Color.Success">
         Catálogo
     </MudNavLink>
 
     <AuthorizeView Roles="Admin">
         <Authorized>
+
             <MudDivider Class="my-2" />
             <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true">
                 <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category" IconColor="Color.Warning">

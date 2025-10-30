@@ -27,19 +27,14 @@
                        ClipMode="DrawerClipMode.Always"
                        Variant="@DrawerVariant.Mini"
                        OpenMiniOnHover="true">
-                <MudDrawerHeader>
-                    <MudText Typo="Typo.h6" Color="Color.Info">
-                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="mr-2" />
-                        Fume
-                    </MudText>
-                </MudDrawerHeader>
+               
                 <NavMenu />
             </MudDrawer>
         </Authorized>
     </AuthorizeView>
 
     <MudMainContent >
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Style="margin-top: 50px !important;background-color: aliceblue;     padding-left: 0px !important;padding-right: 0px !important;">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Style="margin-top: 0px !important;background-color: aliceblue;     padding-left: 0px !important;padding-right: 0px !important;">
             @Body
         </MudContainer>
     </MudMainContent>

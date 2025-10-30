@@ -103,9 +103,9 @@ namespace fume.api.Controllers
                 foreach (var productImage in productDTO.ProductImages!)
                 {
                     var photoProduct = Convert.FromBase64String(productImage);
-                    var savedImage = await _fileStorage.SaveFileAsync(photoProduct, ".jpg", "products");
+                    //var savedImage = await _fileStorage.SaveFileAsync(photoProduct, ".jpg", "products");
 
-                    // Asocia la imagen al producto
+                    //// Asocia la imagen al producto
                     newProduct.ProductImages.Add(new ProductImage { Imagefile = Convert.FromBase64String(productImage), ProductId = newProduct.Id });
                     await _context.SaveChangesAsync();
                 }
@@ -159,6 +159,7 @@ namespace fume.api.Controllers
                 var product = await _context.Products
                     .Include(x => x.ProductCategories)
                     .Include(x => x.ProductSubCategories)
+                    .Include(x => x.ProductImages)
                     .FirstOrDefaultAsync(x => x.Id == productDTO.Id);
                 if (product == null)
                 {
@@ -179,6 +180,28 @@ namespace fume.api.Controllers
                 else
                 {
                     product.ProductSubCategories = new List<ProductSubCategory>();
+                }
+
+                // Actualiza las imágenes
+                if (productDTO.ProductImages != null && productDTO.ProductImages.Any())
+                {
+                    // Eliminar las imágenes existentes
+                    if (product.ProductImages != null)
+                    {
+                        _context.RemoveRange(product.ProductImages);
+                    }
+
+                    // Agregar las nuevas imágenes
+                    product.ProductImages = new List<ProductImage>();
+                    foreach (var productImage in productDTO.ProductImages)
+                    {
+                        var photoProduct = Convert.FromBase64String(productImage);
+                        product.ProductImages.Add(new ProductImage
+                        {
+                            Imagefile = photoProduct,
+                            ProductId = product.Id
+                        });
+                    }
                 }
 
                 _context.Update(product);

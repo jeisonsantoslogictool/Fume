@@ -51,10 +51,49 @@ else
 
     private async Task AddImageAsync()
     {
+        // Este método se llama después de que ImageSelected ya agregó la imagen
+        // Solo necesitamos forzar un re-render del componente
+        StateHasChanged();
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+        {
+            Toast = true,
+            Position = SweetAlertPosition.BottomEnd,
+            ShowConfirmButton = false,
+            Timer = 3000,
+            TimerProgressBar = true
+        });
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Imagen agregada. Recuerda guardar los cambios.");
     }
 
     private async Task RemoveImageAsyc()
     {
+        if (productDTO.ProductImages == null || productDTO.ProductImages.Count == 0)
+        {
+            var errorToast = sweetAlertService.Mixin(new SweetAlertOptions
+            {
+                Toast = true,
+                Position = SweetAlertPosition.BottomEnd,
+                ShowConfirmButton = false,
+                Timer = 3000,
+                TimerProgressBar = true
+            });
+            await errorToast.FireAsync(icon: SweetAlertIcon.Error, message: "No hay imágenes para eliminar.");
+            return;
+        }
+
+        productDTO.ProductImages.RemoveAt(productDTO.ProductImages.Count - 1);
+        StateHasChanged();
+
+        var successToast = sweetAlertService.Mixin(new SweetAlertOptions
+        {
+            Toast = true,
+            Position = SweetAlertPosition.BottomEnd,
+            ShowConfirmButton = false,
+            Timer = 3000,
+            TimerProgressBar = true
+        });
+        await successToast.FireAsync(icon: SweetAlertIcon.Success, message: "Imagen eliminada. Recuerda guardar los cambios.");
     }
 
     private async Task LoadProductAsync()
