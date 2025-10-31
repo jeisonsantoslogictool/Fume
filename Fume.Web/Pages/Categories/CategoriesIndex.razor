@@ -530,14 +530,14 @@ else
                Size="BlazorBootstrap.ModalSize.ExtraLarge"
                HeaderCssClass="modal-header-gradient">
             <BodyTemplate>
-                <CategoryCreate @ref="categoryCreateRef" />
+                <CategoryCreate @ref="categoryCreateRef" OnSuccessCallback="OnCreateSuccess" />
             </BodyTemplate>
             <FooterTemplate>
-                <Button Color="ButtonColor.Secondary" @onclick="OnHideCreateModalClick">
-                    <i class="oi oi-x"></i> Cancelar
+                <Button Color="ButtonColor.Primary" @onclick="@(async () => await categoryCreateRef.CreateAsync())">
+                    <i class="oi oi-check"></i> Guardar
                 </Button>
-                <Button Color="ButtonColor.Primary" @onclick="OnSaveClick">
-                    <i class="oi oi-check"></i> Guardar Categoría
+                <Button Color="ButtonColor.Secondary" @onclick="CloseCreateModal">
+                    <i class="oi oi-x"></i> Cancelar
                 </Button>
             </FooterTemplate>
         </Modal>
@@ -568,14 +568,14 @@ else
                Size="BlazorBootstrap.ModalSize.ExtraLarge"
                HeaderCssClass="modal-header-gradient">
             <BodyTemplate>
-                <SubCategoryCreate @ref="subCategoryCreateRef" />
+                <SubCategoryCreate @ref="subCategoryCreateRef" OnSuccessCallback="OnSubCategoryCreateSuccess" />
             </BodyTemplate>
             <FooterTemplate>
-                <Button Color="ButtonColor.Secondary" @onclick="OnHideSubCategoryModalClick">
-                    <i class="oi oi-x"></i> Cancelar
+                <Button Color="ButtonColor.Primary" @onclick="@(async () => await subCategoryCreateRef.CreateAsync())">
+                    <i class="oi oi-check"></i> Guardar
                 </Button>
-                <Button Color="ButtonColor.Success" @onclick="OnSaveSubCategoryClick">
-                    <i class="oi oi-check"></i> Guardar Subcategoría
+                <Button Color="ButtonColor.Secondary" @onclick="CloseSubCategoryModal">
+                    <i class="oi oi-x"></i> Cancelar
                 </Button>
             </FooterTemplate>
         </Modal>
@@ -717,34 +717,34 @@ else
         await LoadSubCategoriesAsync();
     }
 
-    private async Task OnHideCreateModalClick()
-    {
-        await modalCreate?.HideAsync();
-        await LoadAsync();
-    }
-
     private async Task OnHideEditModalClick()
     {
         await modalEdit?.HideAsync();
         await LoadAsync();
     }
 
-    private async Task OnHideSubCategoryModalClick()
+    private async Task OnCreateSuccess()
     {
-        await modalSubCategory?.HideAsync();
+        // Recarga los datos cuando la categoría se crea exitosamente
         await LoadAsync();
-        await LoadSubCategoriesAsync();
     }
 
-    private async Task OnSaveClick()
+    private async Task CloseCreateModal()
     {
         if (categoryCreateRef != null)
         {
-            await categoryCreateRef.CreateAsync();
+            categoryCreateRef.ResetForm();
         }
+        await modalCreate?.HideAsync();
+    }
 
-        await sweetAlertService.FireAsync("Éxito", "Categoría creada exitosamente", SweetAlertIcon.Success);
-        await OnHideCreateModalClick();
+    private async Task CloseSubCategoryModal()
+    {
+        if (subCategoryCreateRef != null)
+        {
+            subCategoryCreateRef.ResetForm();
+        }
+        await modalSubCategory?.HideAsync();
     }
 
     private async Task OnUpdateClick()
@@ -756,13 +756,11 @@ else
         await OnHideEditModalClick();
     }
 
-    private async Task OnSaveSubCategoryClick()
+    private async Task OnSubCategoryCreateSuccess()
     {
-        if (subCategoryCreateRef != null)
-        {
-            await subCategoryCreateRef.CreateAsync();
-        }
-        await OnHideSubCategoryModalClick();
+        // Recarga los datos cuando la subcategoría se crea exitosamente
+        await LoadAsync();
+        await LoadSubCategoriesAsync();
     }
 
     private async Task ShowModal(int id = 0, bool isEdit = false)
@@ -774,12 +772,22 @@ else
         }
         else
         {
+            // Resetear el formulario cuando se abre el modal de creación
+            if (categoryCreateRef != null)
+            {
+                categoryCreateRef.ResetForm();
+            }
             await modalCreate?.ShowAsync();
         }
     }
 
     private async Task ShowSubCategoryModal()
     {
+        // Resetear el formulario cuando se abre el modal de creación
+        if (subCategoryCreateRef != null)
+        {
+            subCategoryCreateRef.ResetForm();
+        }
         await modalSubCategory?.ShowAsync();
     }
 

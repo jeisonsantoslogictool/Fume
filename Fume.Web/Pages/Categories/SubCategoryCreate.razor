@@ -81,8 +81,7 @@
 }
 else
 {
-    <EditForm Model="@subCategory" OnValidSubmit="CreateAsync">
-        <DataAnnotationsValidator />
+    <EditForm EditContext="@editContext" OnSubmit="@CreateAsync">
 
         <div class="modal-content-grid">
             <!-- Columna Izquierda: Formulario -->
@@ -136,6 +135,7 @@ else
                         }
                     </div>
                 </div>
+
             </div>
 
             <!-- Columna Derecha: Vista Previa -->
@@ -161,17 +161,36 @@ else
 
 @code {
     private SubCategoryDTO subCategory = new() { CategoryId = 0 };
+    private EditContext? editContext;
     private List<Category>? categories;
     private string? imageUrl;
     private string? fileName;
     private bool isLoading = false;
+    private bool wasSuccessful = false;
 
     [CascadingParameter]
     public Modal Modal { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback OnSuccessCallback { get; set; }
+
+    public bool WasSuccessful => wasSuccessful;
+
     protected override async Task OnInitializedAsync()
     {
+        editContext = new EditContext(subCategory);
+        ResetForm();
         await LoadCategoriesAsync();
+    }
+
+    public void ResetForm()
+    {
+        subCategory = new() { CategoryId = 0 };
+        editContext = new EditContext(subCategory);
+        imageUrl = null;
+        fileName = null;
+        wasSuccessful = false;
+        isLoading = false;
     }
 
     private async Task LoadCategoriesAsync()
@@ -236,44 +255,71 @@ else
 
     public async Task CreateAsync()
     {
-        if (subCategory.CategoryId == 0)
-        {
-            await sweetAlertService.FireAsync("Error", "Debe seleccionar una categoría.", SweetAlertIcon.Error);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(subCategory.Name))
-        {
-            await sweetAlertService.FireAsync("Error", "El nombre de la subcategoría es obligatorio.", SweetAlertIcon.Error);
-            return;
-        }
-
-        isLoading = true;
-        StateHasChanged();
-
         try
         {
+            if (subCategory.CategoryId == 0)
+            {
+                await sweetAlertService.FireAsync("Error", "Debe seleccionar una categoría.", SweetAlertIcon.Error);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(subCategory.Name))
+            {
+                await sweetAlertService.FireAsync("Error", "El nombre de la subcategoría es obligatorio.", SweetAlertIcon.Error);
+                return;
+            }
+
+            if (subCategory.Name.Length > 100)
+            {
+                await sweetAlertService.FireAsync("Error", "El nombre de la subcategoría no puede exceder 100 caracteres.", SweetAlertIcon.Error);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(subCategory.ImageString))
+            {
+                await sweetAlertService.FireAsync("Error", "Debe seleccionar una imagen para la subcategoría.", SweetAlertIcon.Error);
+                return;
+            }
+
+            isLoading = true;
+            StateHasChanged();
+
             var httpResponse = await repository.post("/api/subcategories", subCategory);
             if (httpResponse.Error)
             {
                 var message = await httpResponse.GetErrorMessageAsync();
                 await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                isLoading = false;
+                StateHasChanged();
                 return;
             }
-          
-          
-            
-        }
-        finally
-        {
+
+            await sweetAlertService.FireAsync("Éxito", "Subcategoría creada exitosamente", SweetAlertIcon.Success);
+
+            // Marcar como exitoso
+            wasSuccessful = true;
+
+            // Invocar el callback si existe
+            if (OnSuccessCallback.HasDelegate)
+            {
+                await OnSuccessCallback.InvokeAsync();
+            }
+
+            await Cancel();
             isLoading = false;
             StateHasChanged();
-            await sweetAlertService.FireAsync("Éxito", "Subcategoría creada exitosamente", SweetAlertIcon.Success);
+        }
+        catch (Exception ex)
+        {
+            await sweetAlertService.FireAsync("Error", $"Error inesperado: {ex.Message}", SweetAlertIcon.Error);
+            isLoading = false;
+            StateHasChanged();
         }
     }
 
     public async Task Cancel()
     {
+        wasSuccessful = false;
         await Modal.HideAsync();
     }
 }

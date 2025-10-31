@@ -81,6 +81,42 @@ namespace fume.api.Controllers
         [HttpPost]
         public async Task<ActionResult> PostAsync(ProductDTO productDTO)
         {
+            // Validar que el nombre no sea nulo o vacío
+            if (string.IsNullOrWhiteSpace(productDTO.Name))
+            {
+                return BadRequest("El nombre del producto es obligatorio.");
+            }
+
+            // Validar longitud máxima del nombre
+            if (productDTO.Name.Length > 100)
+            {
+                return BadRequest("El nombre del producto no puede exceder 100 caracteres.");
+            }
+
+            // Validar que el precio sea válido
+            if (productDTO.Price <= 0)
+            {
+                return BadRequest("El precio del producto debe ser mayor a 0.");
+            }
+
+            // Validar que el stock sea válido
+            if (productDTO.Stock < 0)
+            {
+                return BadRequest("El stock del producto no puede ser negativo.");
+            }
+
+            // Validar que haya al menos una imagen
+            if (productDTO.ProductImages == null || !productDTO.ProductImages.Any())
+            {
+                return BadRequest("El producto debe tener al menos una imagen.");
+            }
+
+            // Validar que haya al menos una categoría
+            if (productDTO.ProductCategoryIds == null || !productDTO.ProductCategoryIds.Any())
+            {
+                return BadRequest("El producto debe estar asociado a al menos una categoría.");
+            }
+
             try
             {
                 // Crea un nuevo producto
@@ -148,12 +184,42 @@ namespace fume.api.Controllers
             {
                 return BadRequest(exception.Message);
             }
-          
+
         }
 
         [HttpPut]
         public async Task<ActionResult> PutAsync(ProductDTO productDTO)
         {
+            // Validar que el nombre no sea nulo o vacío
+            if (string.IsNullOrWhiteSpace(productDTO.Name))
+            {
+                return BadRequest("El nombre del producto es obligatorio.");
+            }
+
+            // Validar longitud máxima del nombre
+            if (productDTO.Name.Length > 100)
+            {
+                return BadRequest("El nombre del producto no puede exceder 100 caracteres.");
+            }
+
+            // Validar que el precio sea válido
+            if (productDTO.Price <= 0)
+            {
+                return BadRequest("El precio del producto debe ser mayor a 0.");
+            }
+
+            // Validar que el stock sea válido
+            if (productDTO.Stock < 0)
+            {
+                return BadRequest("El stock del producto no puede ser negativo.");
+            }
+
+            // Validar que haya al menos una categoría
+            if (productDTO.ProductCategoryIds == null || !productDTO.ProductCategoryIds.Any())
+            {
+                return BadRequest("El producto debe estar asociado a al menos una categoría.");
+            }
+
             try
             {
                 var product = await _context.Products

@@ -88,6 +88,37 @@ namespace fume.api.Controllers
         [HttpPost]
         public async Task<ActionResult> Post(SubCategoryDTO subCategoryDTO)
         {
+            // Validar que el nombre no sea nulo o vacío
+            if (string.IsNullOrWhiteSpace(subCategoryDTO.Name))
+            {
+                return BadRequest("El nombre de la subcategoría es obligatorio.");
+            }
+
+            // Validar longitud máxima
+            if (subCategoryDTO.Name.Length > 100)
+            {
+                return BadRequest("El nombre de la subcategoría no puede exceder 100 caracteres.");
+            }
+
+            // Validar que se haya seleccionado una categoría
+            if (subCategoryDTO.CategoryId <= 0)
+            {
+                return BadRequest("Debe seleccionar una categoría válida.");
+            }
+
+            // Validar que la categoría exista
+            var categoryExists = await _context.categories.AnyAsync(c => c.Id == subCategoryDTO.CategoryId);
+            if (!categoryExists)
+            {
+                return BadRequest("La categoría seleccionada no existe.");
+            }
+
+            // Validar que haya una imagen
+            if (string.IsNullOrEmpty(subCategoryDTO.ImageString))
+            {
+                return BadRequest("La imagen de la subcategoría es obligatoria.");
+            }
+
             var subCategory = new SubCategory
             {
                 Name = subCategoryDTO.Name,
@@ -125,6 +156,31 @@ namespace fume.api.Controllers
         [HttpPut]
         public async Task<ActionResult> Put(SubCategoryDTO subCategoryDTO)
         {
+            // Validar que el nombre no sea nulo o vacío
+            if (string.IsNullOrWhiteSpace(subCategoryDTO.Name))
+            {
+                return BadRequest("El nombre de la subcategoría es obligatorio.");
+            }
+
+            // Validar longitud máxima
+            if (subCategoryDTO.Name.Length > 100)
+            {
+                return BadRequest("El nombre de la subcategoría no puede exceder 100 caracteres.");
+            }
+
+            // Validar que se haya seleccionado una categoría
+            if (subCategoryDTO.CategoryId <= 0)
+            {
+                return BadRequest("Debe seleccionar una categoría válida.");
+            }
+
+            // Validar que la categoría exista
+            var categoryExists = await _context.categories.AnyAsync(c => c.Id == subCategoryDTO.CategoryId);
+            if (!categoryExists)
+            {
+                return BadRequest("La categoría seleccionada no existe.");
+            }
+
             var subCategory = await _context.SubCategories.FindAsync(subCategoryDTO.Id);
             if (subCategory == null)
             {

@@ -81,6 +81,24 @@ namespace fume.api.Controllers
         [HttpPost]
         public async Task<ActionResult> Post(Category category)
         {
+            // Validar que el nombre no sea nulo o vacío
+            if (string.IsNullOrWhiteSpace(category.Name))
+            {
+                return BadRequest("El nombre de la categoría es obligatorio.");
+            }
+
+            // Validar longitud máxima
+            if (category.Name.Length > 100)
+            {
+                return BadRequest("El nombre de la categoría no puede exceder 100 caracteres.");
+            }
+
+            // Validar que haya una imagen
+            if (category.Image == null || category.Image.Length == 0)
+            {
+                return BadRequest("La imagen de la categoría es obligatoria.");
+            }
+
             _context.Add(category);
             try
             {
@@ -107,6 +125,18 @@ namespace fume.api.Controllers
         [HttpPut]
         public async Task<ActionResult> Put(CategoryDTO categoryDTO)
         {
+            // Validar que el nombre no sea nulo o vacío
+            if (string.IsNullOrWhiteSpace(categoryDTO.Name))
+            {
+                return BadRequest("El nombre de la categoría es obligatorio.");
+            }
+
+            // Validar longitud máxima
+            if (categoryDTO.Name.Length > 100)
+            {
+                return BadRequest("El nombre de la categoría no puede exceder 100 caracteres.");
+            }
+
             try
             {
                 var existingCategory = await _context.categories.FindAsync(categoryDTO.Id);
