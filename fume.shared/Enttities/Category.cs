@@ -33,6 +33,7 @@ namespace fume.shared.Enttities
         [Display(Name = "Imagen")]
         public string ImageString => Image == null || Image.Length == 0 ? string.Empty : Convert.ToBase64String(Image);
 
-
+        [Display(Name = "URL de Imagen")]
+        public string? ImageUrl { get; set; }
     }
 }

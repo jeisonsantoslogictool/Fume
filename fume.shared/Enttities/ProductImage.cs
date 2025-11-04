@@ -14,11 +14,12 @@ namespace fume.shared.Enttities
 
         public int ProductId { get; set; }
 
-        public Product Product { get; set; } 
-
-       
+        public Product Product { get; set; }
 
         [Display(Name = "Foto")]
         public byte[] Imagefile { get; set; } = null!;
+
+        [Display(Name = "URL de Imagen")]
+        public string? ImageUrl { get; set; }
     }
 }

@@ -27,7 +27,6 @@ namespace fume.api.Controllers
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.Products
-                .Include(x => x.ProductImages)
                 .Include(x => x.ProductCategories)
                 .Include(x => x.ProductSubCategories)
                 .AsQueryable();
@@ -64,7 +63,6 @@ namespace fume.api.Controllers
         public async Task<IActionResult> GetAsync(int id)
         {
             var product = await _context.Products
-                .Include(x => x.ProductImages)
                 .Include(x => x.ProductCategories!)
                 .ThenInclude(x => x.Category)
                 .Include(x => x.ProductSubCategories!)
@@ -294,11 +292,28 @@ namespace fume.api.Controllers
         public async Task<ActionResult> GetBySubcategoryAsync(int subcategoryId)
         {
             var products = await _context.Products
-                .Include(x => x.ProductImages)
                 .Include(x => x.ProductCategories)
                 .Include(x => x.ProductSubCategories)
+                .Include(x => x.ProductImages)
                 .Where(x => x.ProductSubCategories!.Any(ps => ps.SubCategoryId == subcategoryId))
                 .OrderBy(x => x.Name)
+                .Select(x => new Product
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Description = x.Description,
+                    Price = x.Price,
+                    Stock = x.Stock,
+                    ProductCategories = x.ProductCategories,
+                    ProductSubCategories = x.ProductSubCategories,
+                    ProductImages = x.ProductImages.Select(img => new ProductImage
+                    {
+                        Id = img.Id,
+                        ProductId = img.ProductId,
+                        Imagefile = null, // No traer los bytes de la imagen
+                        ImageUrl = img.ImageUrl
+                    }).ToList()
+                })
                 .ToListAsync();
 
             return Ok(products);

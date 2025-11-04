@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Fume.Web.Auth;
 using Blazored.Modal;
 using MudBlazor.Services;
+using Fume.Web.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -22,6 +23,7 @@ builder.Services.AddMudServices();
 builder.Services.AddScoped<AutenticacionPro>();
 builder.Services.AddScoped<AuthenticationStateProvider, AutenticacionPro>(x => x.GetRequiredService<AutenticacionPro>());
 builder.Services.AddScoped<IloginService, AutenticacionPro>(x => x.GetRequiredService<AutenticacionPro>());
+builder.Services.AddSingleton<CatalogNavigationService>();
 
 
 

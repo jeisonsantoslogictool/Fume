@@ -38,10 +38,21 @@ namespace fume.api.Controllers
                 queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
             }
 
-            return Ok(await queryable
+            var result = await queryable
                 .OrderBy(x => x.Name)
                 .Paginate(pagination)
-                .ToListAsync());
+                .Select(x => new Category
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    ImageUrl = x.ImageUrl,
+                    Image = null, // No traer los bytes
+                    SubCategories = x.SubCategories,
+                    ProductCategories = x.ProductCategories
+                })
+                .ToListAsync();
+
+            return Ok(result);
         }
 
 

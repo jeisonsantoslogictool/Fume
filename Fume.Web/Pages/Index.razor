@@ -2,11 +2,13 @@
 @inject IRepository repository
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
+@inject Fume.Web.Services.CatalogNavigationService catalogNavigation
 @using Microsoft.AspNetCore.Components.Web
 @inherits LayoutComponentBase
 @layout MainLayout
 @using MudBlazor
 @using Fume.Web.Helpers
+@implements IDisposable
 
 <style type="text/css">
     /* Header Section */
@@ -520,9 +522,12 @@ else
                     {
                         <div class="category-item" @onclick="@(() => GoToSubCategories(category))">
                             <div class="category-image">
-                                @if (category.Image != null && category.Image.Length > 0)
+                                @{
+                                    var categoryImageUrl = ImageUrlHelper.GetCategoryImageUrl(category);
+                                }
+                                @if (categoryImageUrl != "/images/no-image.png")
                                 {
-                                    <img src="data:image/png;base64,@category.ImageString" alt="@category.Name" />
+                                    <img src="@categoryImageUrl" alt="@category.Name" />
                                 }
                                 else
                                 {
@@ -566,9 +571,12 @@ else
                     {
                         <div class="category-item" @onclick="@(() => GoToProducts(subCategory))">
                             <div class="category-image">
-                                @if (subCategory.Image != null && subCategory.Image.Length > 0)
+                                @{
+                                    var subCategoryImageUrl = ImageUrlHelper.GetSubCategoryImageUrl(subCategory);
+                                }
+                                @if (subCategoryImageUrl != "/images/no-image.png")
                                 {
-                                    <img src="data:image/png;base64,@subCategory.ImageString" alt="@subCategory.Name" />
+                                    <img src="@subCategoryImageUrl" alt="@subCategory.Name" />
                                 }
                                 else
                                 {
@@ -605,22 +613,50 @@ else
             </div>
             <p class="section-subtitle">Explora nuestra selección de productos</p>
 
-            @if (products != null && products.Any())
+            @if (loading)
+            {
+                <!-- Skeleton Loading -->
+                <div class="product-grid">
+                    @for (int i = 0; i < 8; i++)
+                    {
+                        <div class="product-card">
+                            <div class="product-image">
+                                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="220px" Width="100%" Animation="Animation.Wave" />
+                            </div>
+                            <div class="product-info">
+                                <MudSkeleton SkeletonType="SkeletonType.Text" Height="24px" Width="80%" Animation="Animation.Wave" />
+                                <MudSkeleton SkeletonType="SkeletonType.Text" Height="20px" Width="100%" Animation="Animation.Wave" Class="mt-2" />
+                                <MudSkeleton SkeletonType="SkeletonType.Text" Height="20px" Width="60%" Animation="Animation.Wave" Class="mt-1" />
+                                <MudSkeleton SkeletonType="SkeletonType.Text" Height="32px" Width="50%" Animation="Animation.Wave" Class="mt-3" />
+                                <div class="product-actions mt-3">
+                                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="32px" Width="48%" Animation="Animation.Wave" />
+                                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="32px" Width="48%" Animation="Animation.Wave" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (products != null && products.Any())
             {
                 <div class="product-grid">
                     @foreach (var product in products)
                     {
                         <div class="product-card">
-                            <div class="product-image">
-                                @if (product.ProductImages != null && product.ProductImages.Any())
+                            <div class="product-image" style="position: relative;">
+                                @if (!IsImageLoaded(product.Id))
                                 {
-                                    var firstImage = Convert.ToBase64String(product.ProductImages.First().Imagefile);
-                                    <img src="data:image/png;base64,@firstImage" alt="@product.Name" />
+                                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="220px" Width="100%" Animation="Animation.Wave" />
                                 }
-                                else
-                                {
-                                    <img src="/images/no-image.png" alt="Sin imagen" />
+                                @{
+                                    var productImageUrl = product.ProductImages != null && product.ProductImages.Any()
+                                        ? ImageUrlHelper.GetProductImageUrl(product.ProductImages.First())
+                                        : "/images/no-image.png";
                                 }
+                                <img src="@productImageUrl"
+                                     alt="@product.Name"
+                                     @onload="() => OnImageLoaded(product.Id)"
+                                     style="@(IsImageLoaded(product.Id) ? "" : "display: none;")" />
                             </div>
                             <div class="product-info">
                                 <div class="product-name">@product.Name</div>
@@ -666,6 +702,9 @@ else
     private Category? selectedCategory;
     private SubCategory? selectedSubCategory;
 
+    // Para manejar el estado de carga de imágenes
+    private HashSet<int> loadedImages = new HashSet<int>();
+
     [Parameter]
     [SupplyParameterFromQuery]
     public string Filter { get; set; } = "";
@@ -675,6 +714,11 @@ else
 
     protected async override Task OnInitializedAsync()
     {
+        // Suscribirse a los eventos del servicio de navegación
+        catalogNavigation.OnCategoriesRequested += HandleCategoriesRequested;
+        catalogNavigation.OnCategorySelected += HandleCategorySelected;
+        catalogNavigation.OnSubCategorySelected += HandleSubCategorySelected;
+
         await LoadCategoriesAsync();
     }
 
@@ -682,6 +726,71 @@ else
     {
         await CheckIsAuthenticatedAsync();
         await LoadCounterAsync();
+    }
+
+    public void Dispose()
+    {
+        // Desuscribirse de los eventos cuando el componente se destruye
+        catalogNavigation.OnCategoriesRequested -= HandleCategoriesRequested;
+        catalogNavigation.OnCategorySelected -= HandleCategorySelected;
+        catalogNavigation.OnSubCategorySelected -= HandleSubCategorySelected;
+    }
+
+    private void HandleCategoriesRequested()
+    {
+        InvokeAsync(async () =>
+        {
+            // Solo recargar si no hay categorías
+            if (categories == null || !categories.Any())
+            {
+                await LoadCategoriesAsync();
+            }
+            else
+            {
+                // Ya tenemos las categorías, solo cambiar la vista
+                selectedCategory = null;
+                selectedSubCategory = null;
+                subCategories = null;
+                products = null;
+                Filter = string.Empty;
+                currentView = ViewType.Categories;
+                loading = false;
+            }
+            StateHasChanged();
+        });
+    }
+
+    private void HandleCategorySelected(Category category)
+    {
+        InvokeAsync(async () =>
+        {
+            await GoToSubCategories(category);
+            StateHasChanged();
+        });
+    }
+
+    private void HandleSubCategorySelected(SubCategory subCategory)
+    {
+        InvokeAsync(async () =>
+        {
+            // Necesitamos cargar la categoría padre primero
+            if (subCategory.Category != null)
+            {
+                selectedCategory = subCategory.Category;
+            }
+            else
+            {
+                // Si no viene la categoría, la cargamos
+                var categoryResponse = await repository.Get<Category>($"/api/categories/{subCategory.CategoryId}");
+                if (!categoryResponse.Error)
+                {
+                    selectedCategory = categoryResponse.Response;
+                }
+            }
+
+            await GoToProducts(subCategory);
+            StateHasChanged();
+        });
     }
 
     private async Task CheckIsAuthenticatedAsync()
@@ -748,6 +857,9 @@ else
         loading = true;
         selectedSubCategory = subCategory;
 
+        // Limpiar el estado de imágenes cargadas
+        loadedImages.Clear();
+
         // Cargar productos que tengan esta subcategoría
         var response = await repository.Get<List<Product>>($"/api/products/subcategory/{subCategory.Id}");
 
@@ -762,6 +874,17 @@ else
         products = response.Response;
         currentView = ViewType.Products;
         loading = false;
+    }
+
+    private bool IsImageLoaded(int productId)
+    {
+        return loadedImages.Contains(productId);
+    }
+
+    private void OnImageLoaded(int productId)
+    {
+        loadedImages.Add(productId);
+        StateHasChanged();
     }
 
     private async Task GoToHome()

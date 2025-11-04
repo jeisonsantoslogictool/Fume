@@ -51,12 +51,14 @@ namespace fume.shared.Enttities
         public int ProductImagesNumber => ProductImages == null ? 0 : ProductImages.Count;
 
         [Display(Name = "Imagén")]
-        public string MainImage => ProductImages == null || !ProductImages.Any() ? string.Empty : Convert.ToBase64String(ProductImages.First().Imagefile);
+        public string MainImage => ProductImages == null || !ProductImages.Any() || ProductImages.First().Imagefile == null
+            ? string.Empty
+            : Convert.ToBase64String(ProductImages.First().Imagefile);
 
         [Display(Name = "Imágenes Base64")]
         public List<string> ProductImagesString => ProductImages == null || !ProductImages.Any()
             ? new List<string>()
-            : ProductImages.Select(x => Convert.ToBase64String(x.Imagefile)).ToList();
+            : ProductImages.Where(x => x.Imagefile != null).Select(x => Convert.ToBase64String(x.Imagefile)).ToList();
 
 
 

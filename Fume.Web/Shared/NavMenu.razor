@@ -1,17 +1,51 @@
-﻿<MudNavMenu>
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject Fume.Web.Services.CatalogNavigationService catalogNavigation
 
-    <MudNavLink Href="/" Icon="@Icons.Material.Filled.ShoppingCart" IconColor="Color.Info">
+<MudNavMenu>
+
+    <MudNavLink Href="/" Icon="@Icons.Material.Filled.ShoppingCart" IconColor="Color.Info" OnClick="NavigateToHome">
         Fume
     </MudNavLink>
     <MudNavLink Href="/catalog" Icon="@Icons.Material.Filled.ShoppingBag" IconColor="Color.Success">
         Catálogo
     </MudNavLink>
 
+    <MudDivider Class="my-2" />
+
+    <!-- Categorías y Subcategorías para todos los usuarios -->
+    @if (categories != null && categories.Any())
+    {
+        @foreach (var category in categories)
+        {
+            <MudNavGroup Title="@category.Name" Icon="@Icons.Material.Filled.Category" IconColor="Color.Primary">
+                @if (category.SubCategories != null && category.SubCategories.Any())
+                {
+                    @foreach (var subCategory in category.SubCategories)
+                    {
+                        <MudNavLink OnClick="@(() => NavigateToSubCategory(subCategory))"
+                                    Icon="@Icons.Material.Filled.Label"
+                                    IconColor="Color.Secondary">
+                            @subCategory.Name
+                        </MudNavLink>
+                    }
+                }
+                else
+                {
+                    <MudNavLink OnClick="@(() => NavigateToCategory(category))"
+                                Icon="@Icons.Material.Filled.Inbox"
+                                IconColor="Color.Default">
+                        Ver categoría
+                    </MudNavLink>
+                }
+            </MudNavGroup>
+        }
+    }
+
     <AuthorizeView Roles="Admin">
         <Authorized>
-
             <MudDivider Class="my-2" />
-            <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="true">
+            <MudNavGroup Title="Administración" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
                 <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category" IconColor="Color.Warning">
                     Categorías
                 </MudNavLink>
@@ -27,4 +61,60 @@
 </MudNavMenu>
 
 @code {
+    private List<Category>? categories;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoriesAsync();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        try
+        {
+            var response = await repository.Get<List<Category>>("/api/categories?RecordsNumber=100");
+            if (!response.Error)
+            {
+                categories = response.Response;
+            }
+        }
+        catch
+        {
+            // Silently fail - navigation menu will just not show categories
+            categories = new List<Category>();
+        }
+    }
+
+    private void NavigateToHome()
+    {
+        // Solo navegar si no estamos en la página principal
+        if (navigationManager.Uri != navigationManager.BaseUri)
+        {
+            navigationManager.NavigateTo("/");
+        }
+        // Disparar el evento siempre para actualizar la vista
+        catalogNavigation.NavigateToCategories();
+    }
+
+    private void NavigateToCategory(Category category)
+    {
+        // Solo navegar si no estamos en la página principal
+        if (navigationManager.Uri != navigationManager.BaseUri)
+        {
+            navigationManager.NavigateTo("/");
+        }
+        // Disparar el evento siempre para actualizar la vista
+        catalogNavigation.NavigateToCategory(category);
+    }
+
+    private void NavigateToSubCategory(SubCategory subCategory)
+    {
+        // Solo navegar si no estamos en la página principal
+        if (navigationManager.Uri != navigationManager.BaseUri)
+        {
+            navigationManager.NavigateTo("/");
+        }
+        // Disparar el evento siempre para actualizar la vista
+        catalogNavigation.NavigateToSubCategory(subCategory);
+    }
 }

@@ -80,6 +80,15 @@ namespace fume.api.Controllers
                 .Include(x => x.ProductSubCategories)
                 .Where(x => x.CategoryId == categoryId)
                 .OrderBy(x => x.Name)
+                .Select(x => new SubCategory
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    CategoryId = x.CategoryId,
+                    ImageUrl = x.ImageUrl,
+                    Image = null, // No traer los bytes
+                    ProductSubCategories = x.ProductSubCategories
+                })
                 .ToListAsync();
 
             return Ok(subCategories);

@@ -1,0 +1,329 @@
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@using fume.shared.DTOs
+
+<style>
+    .modal-content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .upload-area {
+        border: 2px dashed #e0e0e0;
+        border-radius: 12px;
+        background-color: #fafafa;
+        padding: 24px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .upload-area:hover {
+        border-color: #667eea;
+        background-color: #f0f0ff;
+    }
+
+    .upload-button {
+        display: inline-block;
+        padding: 12px 24px;
+        background: #667eea;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+        border: none;
+    }
+
+    .upload-button:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+    }
+
+    .image-preview-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 16px;
+        background-color: #fafafa;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 300px;
+    }
+
+    .image-preview-container img {
+        max-width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+
+    .no-image-placeholder {
+        color: #999;
+        text-align: center;
+        padding: 40px;
+    }
+
+    @@media (max-width: 768px) {
+        .modal-content-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@if (subCategoryDTO is null || categories is null)
+{
+    <div class="text-center p-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+}
+else
+{
+    <EditForm Model="@subCategoryDTO" OnValidSubmit="EditAsync">
+        <DataAnnotationsValidator />
+
+        <div class="modal-content-grid">
+            <!-- Columna Izquierda: Formulario -->
+            <div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Categoría Padre</label>
+                    <select class="form-select form-select-lg" @bind="subCategoryDTO.CategoryId">
+                        <option value="0">Seleccione una categoría...</option>
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    </select>
+                    @if (subCategoryDTO.CategoryId == 0)
+                    {
+                        <div class="text-danger small mt-1">Debe seleccionar una categoría</div>
+                    }
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nombre de la Subcategoría</label>
+                    <InputText class="form-control form-control-lg"
+                               @bind-Value="subCategoryDTO.Name"
+                               placeholder="Ingrese el nombre de la subcategoría" />
+                    <ValidationMessage For="@(() => subCategoryDTO.Name)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Imagen de la Subcategoría</label>
+                    <div class="upload-area">
+                        <InputFile OnChange="OnFileSelected"
+                                   accept=".png,.jpg,.jpeg"
+                                   id="fileInputEditSubCategory"
+                                   style="display: none;" />
+
+                        <label for="fileInputEditSubCategory" class="upload-button">
+                            <i class="oi oi-cloud-upload"></i> Cambiar Imagen
+                        </label>
+
+                        <p class="text-muted mt-3 mb-0" style="font-size: 0.875rem;">
+                            Formatos: PNG, JPG, JPEG (Máx. 10MB)
+                        </p>
+
+                        @if (!string.IsNullOrEmpty(fileName))
+                        {
+                            <div class="mt-3">
+                                <span class="badge bg-success" style="font-size: 0.9rem; padding: 8px 12px;">
+                                    <i class="oi oi-check"></i> @fileName
+                                </span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Vista Previa -->
+            <div>
+                <label class="form-label fw-bold">Vista Previa</label>
+                <div class="image-preview-container">
+                    @if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        <img src="data:image/png;base64,@imageUrl" alt="Preview" />
+                    }
+                    else
+                    {
+                        <div class="no-image-placeholder">
+                            <i class="oi oi-image" style="font-size: 4rem; opacity: 0.3;"></i>
+                            <p class="mt-3">No hay imagen seleccionada</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
+
+@code {
+    private SubCategoryDTO? subCategoryDTO;
+    private List<Category>? categories;
+    private string? imageUrl;
+    private string? fileName;
+    private bool isLoading = false;
+
+    [CascadingParameter]
+    public Modal Modal { get; set; } = default!;
+
+    [Parameter]
+    public int SubCategoryId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoriesAsync();
+        await LoadSubCategoryAsync();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        var responseHttp = await repository.Get<List<Category>>("/api/categories");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        categories = responseHttp.Response;
+    }
+
+    private async Task LoadSubCategoryAsync()
+    {
+        var responseHttp = await repository.Get<SubCategory>($"/api/subcategories/{SubCategoryId}");
+        if (responseHttp.Error)
+        {
+            if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+                await sweetAlertService.FireAsync("Error", "Subcategoría no encontrada", SweetAlertIcon.Error);
+                await Modal.HideAsync();
+                return;
+            }
+
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        var subCategory = responseHttp.Response;
+        subCategoryDTO = new SubCategoryDTO
+        {
+            Id = subCategory.Id,
+            Name = subCategory.Name,
+            CategoryId = subCategory.CategoryId,
+            ImageString = subCategory.Image != null && subCategory.Image.Length > 0
+                ? Convert.ToBase64String(subCategory.Image)
+                : null
+        };
+
+        // Cargar imagen existente si hay una
+        if (subCategory?.Image != null && subCategory.Image.Length > 0)
+        {
+            imageUrl = Convert.ToBase64String(subCategory.Image);
+            fileName = "Imagen actual";
+        }
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null && subCategoryDTO != null)
+        {
+            // Validar tamaño
+            if (file.Size > 10 * 1024 * 1024)
+            {
+                await sweetAlertService.FireAsync("Error", "El archivo es demasiado grande. Máximo 10MB.", SweetAlertIcon.Error);
+                return;
+            }
+
+            // Validar tipo
+            var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+            if (!allowedTypes.Contains(file.ContentType))
+            {
+                await sweetAlertService.FireAsync("Error", "Formato no permitido. Solo PNG, JPG o JPEG.", SweetAlertIcon.Error);
+                return;
+            }
+
+            fileName = file.Name;
+            isLoading = true;
+            StateHasChanged();
+
+            try
+            {
+                // Leer el archivo
+                var buffer = new byte[file.Size];
+                await file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 10).ReadAsync(buffer);
+
+                // Convertir a Base64
+                imageUrl = Convert.ToBase64String(buffer);
+                subCategoryDTO.ImageString = imageUrl;
+            }
+            catch (Exception ex)
+            {
+                await sweetAlertService.FireAsync("Error", $"Error al cargar la imagen: {ex.Message}", SweetAlertIcon.Error);
+                fileName = string.Empty;
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    public async Task EditAsync()
+    {
+        if (subCategoryDTO is null)
+        {
+            return;
+        }
+
+        if (subCategoryDTO.CategoryId == 0)
+        {
+            await sweetAlertService.FireAsync("Error", "Debe seleccionar una categoría.", SweetAlertIcon.Error);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(subCategoryDTO.Name))
+        {
+            await sweetAlertService.FireAsync("Error", "El nombre de la subcategoría es obligatorio.", SweetAlertIcon.Error);
+            return;
+        }
+
+        if (subCategoryDTO.Name.Length > 100)
+        {
+            await sweetAlertService.FireAsync("Error", "El nombre de la subcategoría no puede exceder 100 caracteres.", SweetAlertIcon.Error);
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var responseHttp = await repository.Put("/api/subcategories", subCategoryDTO);
+            if (responseHttp.Error)
+            {
+                var message = await responseHttp.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                return;
+            }
+
+            await sweetAlertService.FireAsync("Éxito", "Subcategoría actualizada exitosamente", SweetAlertIcon.Success);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    public async Task Cancel()
+    {
+        await Modal.HideAsync();
+    }
+}
