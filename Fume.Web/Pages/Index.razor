@@ -694,6 +694,7 @@ else
     private bool loading = true;
     private int counter = 0;
     private bool isAuthenticated;
+    private bool firstRender = true;
 
     private List<Category>? categories;
     private List<SubCategory>? subCategories;
@@ -712,20 +713,33 @@ else
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
 
-    protected async override Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         // Suscribirse a los eventos del servicio de navegación
         catalogNavigation.OnCategoriesRequested += HandleCategoriesRequested;
         catalogNavigation.OnCategorySelected += HandleCategorySelected;
         catalogNavigation.OnSubCategorySelected += HandleSubCategorySelected;
+    }
 
-        await LoadCategoriesAsync();
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            this.firstRender = false;
+            await CheckIsAuthenticatedAsync();
+            await LoadCounterAsync();
+            await LoadCategoriesAsync();
+            StateHasChanged();
+        }
     }
 
     protected async override Task OnParametersSetAsync()
     {
-        await CheckIsAuthenticatedAsync();
-        await LoadCounterAsync();
+        if (!firstRender)
+        {
+            await CheckIsAuthenticatedAsync();
+            await LoadCounterAsync();
+        }
     }
 
     public void Dispose()
