@@ -739,11 +739,17 @@ else
     private int selectedCategoryId = 0;
     private int selectedSubCategoryId = 0;
     private Category? categoryDetail = null;
+    private bool firstRender = true;
 
-    protected async override Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LoadAsync();
-        await LoadSubCategoriesAsync();
+        if (firstRender)
+        {
+            this.firstRender = false;
+            await LoadAsync();
+            await LoadSubCategoriesAsync();
+            StateHasChanged();
+        }
     }
 
     private async Task OnHideEditModalClick()
