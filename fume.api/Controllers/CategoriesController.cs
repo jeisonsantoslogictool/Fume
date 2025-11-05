@@ -28,9 +28,6 @@ namespace fume.api.Controllers
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.categories
-                .Include(x => x.SubCategories)
-                .ThenInclude(x => x.ProductSubCategories)
-                .Include(x => x.ProductCategories)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
@@ -46,9 +43,7 @@ namespace fume.api.Controllers
                     Id = x.Id,
                     Name = x.Name,
                     ImageUrl = x.ImageUrl,
-                    Image = null, // No traer los bytes
-                    SubCategories = x.SubCategories,
-                    ProductCategories = x.ProductCategories
+                    Image = null // No traer los bytes ni relaciones innecesarias
                 })
                 .ToListAsync();
 

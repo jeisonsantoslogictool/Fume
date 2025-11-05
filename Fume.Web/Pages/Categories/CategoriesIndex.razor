@@ -753,8 +753,11 @@ else
             loading = true;
             StateHasChanged();
 
-            await LoadAsync();
-            await LoadSubCategoriesAsync();
+            // Ejecutar ambas cargas en PARALELO para mayor velocidad
+            await Task.WhenAll(
+                LoadAsync(),
+                LoadSubCategoriesAsync()
+            );
 
             loading = false;
             StateHasChanged();
@@ -939,10 +942,14 @@ else
 
         try
         {
-            var responseHppt = await repository.Get<List<Category>>(url1);
-            var responseHppt2 = await repository.Get<int>(url2);
-            categories = responseHppt.Response!;
-            totalPages = responseHppt2.Response!;
+            // Ejecutar ambas llamadas HTTP en PARALELO
+            var task1 = repository.Get<List<Category>>(url1);
+            var task2 = repository.Get<int>(url2);
+
+            await Task.WhenAll(task1, task2);
+
+            categories = task1.Result.Response!;
+            totalPages = task2.Result.Response!;
         }
         catch (Exception ex)
         {

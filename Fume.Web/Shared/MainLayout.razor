@@ -42,7 +42,15 @@
 
 @code {
     private bool _drawerOpen = true;
-
+    private bool firstRender = true;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            DrawerToggle();
+            StateHasChanged();
+        }
+    }
     private void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;

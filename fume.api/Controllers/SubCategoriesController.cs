@@ -26,7 +26,6 @@ namespace fume.api.Controllers
         {
             var queryable = _context.SubCategories
                 .Include(x => x.Category)
-                .Include(x => x.ProductSubCategories)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
@@ -34,11 +33,22 @@ namespace fume.api.Controllers
                 queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
             }
 
-            return Ok(await queryable
+            var result = await queryable
                 .OrderBy(x => x.Category.Name)
                 .ThenBy(x => x.Name)
                 .Paginate(pagination)
-                .ToListAsync());
+                .Select(x => new SubCategory
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    CategoryId = x.CategoryId,
+                    Category = x.Category,
+                    Image = null, // No traer bytes de imagen
+                    ImageUrl = x.ImageUrl
+                })
+                .ToListAsync();
+
+            return Ok(result);
         }
 
         [HttpGet("totalPages")]
