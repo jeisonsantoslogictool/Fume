@@ -292,9 +292,7 @@ namespace fume.api.Controllers
         public async Task<ActionResult> GetBySubcategoryAsync(int subcategoryId)
         {
             var products = await _context.Products
-                .Include(x => x.ProductCategories)
-                .Include(x => x.ProductSubCategories)
-                .Include(x => x.ProductImages)
+                .AsNoTracking() // No rastrear cambios = más rápido
                 .Where(x => x.ProductSubCategories!.Any(ps => ps.SubCategoryId == subcategoryId))
                 .OrderBy(x => x.Name)
                 .Select(x => new Product
@@ -304,8 +302,6 @@ namespace fume.api.Controllers
                     Description = x.Description,
                     Price = x.Price,
                     Stock = x.Stock,
-                    ProductCategories = x.ProductCategories,
-                    ProductSubCategories = x.ProductSubCategories,
                     ProductImages = x.ProductImages.Select(img => new ProductImage
                     {
                         Id = img.Id,

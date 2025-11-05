@@ -28,6 +28,7 @@ namespace fume.api.Controllers
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.categories
+                .AsNoTracking() // No rastrear cambios = más rápido
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
@@ -55,8 +56,9 @@ namespace fume.api.Controllers
         public async Task<ActionResult> GetPages([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.categories
+                .AsNoTracking() // No rastrear cambios = más rápido
                 .AsQueryable();
-            
+
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
             {
                 queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));

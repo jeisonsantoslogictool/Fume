@@ -25,6 +25,7 @@ namespace fume.api.Controllers
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.SubCategories
+                .AsNoTracking() // No rastrear cambios = más rápido
                 .Include(x => x.Category)
                 .AsQueryable();
 
@@ -55,6 +56,7 @@ namespace fume.api.Controllers
         public async Task<ActionResult> GetPages([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.SubCategories
+                .AsNoTracking() // No rastrear cambios = más rápido
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))

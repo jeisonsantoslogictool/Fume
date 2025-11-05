@@ -179,7 +179,7 @@ namespace fume.api.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("categories");
+                    b.ToTable("categories", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.City", b =>
@@ -203,7 +203,7 @@ namespace fume.api.Migrations
                     b.HasIndex("StateId", "Name")
                         .IsUnique();
 
-                    b.ToTable("Cities");
+                    b.ToTable("Cities", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.Country", b =>
@@ -224,7 +224,7 @@ namespace fume.api.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Countries");
+                    b.ToTable("Countries", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.Product", b =>
@@ -256,7 +256,7 @@ namespace fume.api.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.ProductCategory", b =>
@@ -279,7 +279,7 @@ namespace fume.api.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductCategories");
+                    b.ToTable("ProductCategories", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.ProductImage", b =>
@@ -304,7 +304,7 @@ namespace fume.api.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductImages");
+                    b.ToTable("ProductImages", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.ProductSubCategory", b =>
@@ -327,7 +327,7 @@ namespace fume.api.Migrations
 
                     b.HasIndex("SubCategoryId");
 
-                    b.ToTable("ProductSubCategories");
+                    b.ToTable("ProductSubCategories", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.State", b =>
@@ -351,7 +351,7 @@ namespace fume.api.Migrations
                     b.HasIndex("CountryId", "Name")
                         .IsUnique();
 
-                    b.ToTable("States");
+                    b.ToTable("States", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.SubCategory", b =>
@@ -381,7 +381,7 @@ namespace fume.api.Migrations
                     b.HasIndex("CategoryId", "Name")
                         .IsUnique();
 
-                    b.ToTable("SubCategories");
+                    b.ToTable("SubCategories", (string)null);
                 });
 
             modelBuilder.Entity("fume.shared.Enttities.User", b =>
