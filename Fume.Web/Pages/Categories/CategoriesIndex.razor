@@ -343,7 +343,8 @@ else
                     type="button"
                     role="tab"
                     aria-controls="subcategories"
-                    aria-selected="false">
+                    aria-selected="false"
+                    @onclick="OnSubCategoriesTabClick">
                  <i class="oi oi-tag"></i>
                  <span>Subcategorías</span>
                  @if (allSubCategories != null)
@@ -753,14 +754,21 @@ else
             loading = true;
             StateHasChanged();
 
-            // Ejecutar ambas cargas en PARALELO para mayor velocidad
-            await Task.WhenAll(
-                LoadAsync(),
-                LoadSubCategoriesAsync()
-            );
+            // Solo cargar categorías inicialmente
+            // Las subcategorías se cargarán cuando el usuario haga clic en la pestaña
+            await LoadAsync();
 
             loading = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task OnSubCategoriesTabClick()
+    {
+        // Cargar subcategorías solo si no se han cargado antes (lazy loading)
+        if (allSubCategories == null)
+        {
+            await LoadSubCategoriesAsync();
         }
     }
 
@@ -1011,7 +1019,8 @@ else
     // SubCategories Methods
     private async Task LoadSubCategoriesAsync()
     {
-        var response = await repository.Get<List<SubCategory>>("/api/subcategories");
+        // Cargar con paginación grande para obtener todas, pero sin traer datos pesados
+        var response = await repository.Get<List<SubCategory>>("/api/subcategories?RecordsNumber=1000");
         if (response.Error)
         {
             var message = await response.GetErrorMessageAsync();

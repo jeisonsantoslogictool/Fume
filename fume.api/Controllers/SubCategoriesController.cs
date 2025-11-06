@@ -43,7 +43,12 @@ namespace fume.api.Controllers
                     Id = x.Id,
                     Name = x.Name,
                     CategoryId = x.CategoryId,
-                    Category = x.Category,
+                    Category = new Category
+                    {
+                        Id = x.Category.Id,
+                        Name = x.Category.Name,
+                        Image = null // No traer bytes de imagen de categoría
+                    },
                     Image = null, // No traer bytes de imagen
                     ImageUrl = x.ImageUrl
                 })
