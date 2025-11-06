@@ -245,8 +245,8 @@ else
                         <div class="product-image-container">
                             @if (product.ProductImages != null && product.ProductImages.Any())
                             {
-                                var firstImage = Convert.ToBase64String(product.ProductImages.First().Imagefile);
-                                <img src="data:image/png;base64,@firstImage" alt="@product.Name" />
+                                var imageUrl = ImageUrlHelper.GetProductImageUrl(product.ProductImages.First());
+                                <img src="@imageUrl" alt="@product.Name" />
                             }
                             else
                             {
@@ -278,8 +278,8 @@ else
                                 <div class="image-gallery">
                                     @foreach (var image in product.ProductImages.Take(5))
                                     {
-                                        var imageBase64 = Convert.ToBase64String(image.Imagefile);
-                                        <img src="data:image/png;base64,@imageBase64" alt="Imagen del producto" />
+                                        var imageUrl = ImageUrlHelper.GetProductImageUrl(image);
+                                        <img src="@imageUrl" alt="Imagen del producto" />
                                     }
                                     @if (product.ProductImages.Count() > 5)
                                     {

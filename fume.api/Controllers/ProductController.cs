@@ -27,8 +27,7 @@ namespace fume.api.Controllers
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.Products
-                .Include(x => x.ProductCategories)
-                .Include(x => x.ProductSubCategories)
+                .AsNoTracking() // No rastrear cambios = más rápido
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(pagination.Filter))
@@ -36,10 +35,29 @@ namespace fume.api.Controllers
                 queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
             }
 
-            return Ok(await queryable
+            var products = await queryable
                 .OrderBy(x => x.Name)
                 .Paginate(pagination)
-                .ToListAsync());
+                .Select(x => new Product
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Description = x.Description,
+                    Price = x.Price,
+                    Stock = x.Stock,
+                    ProductCategories = x.ProductCategories,
+                    ProductSubCategories = x.ProductSubCategories,
+                    ProductImages = x.ProductImages.Select(img => new ProductImage
+                    {
+                        Id = img.Id,
+                        ProductId = img.ProductId,
+                        Imagefile = null, // No traer los bytes de la imagen
+                        ImageUrl = img.ImageUrl
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(products);
         }
 
 
@@ -67,6 +85,7 @@ namespace fume.api.Controllers
                 .ThenInclude(x => x.Category)
                 .Include(x => x.ProductSubCategories!)
                 .ThenInclude(x => x.SubCategory)
+                .Include(x => x.ProductImages)
                 .FirstOrDefaultAsync(x => x.Id == id);
             if (product == null)
             {

@@ -85,36 +85,36 @@
         }
     }
 
-    private void NavigateToHome()
+    private async void NavigateToHome()
     {
-        // Solo navegar si no estamos en la página principal
-        if (navigationManager.Uri != navigationManager.BaseUri)
+        var uri = new Uri(navigationManager.Uri);
+        if (uri.AbsolutePath != "/")
         {
             navigationManager.NavigateTo("/");
+            await Task.Delay(100);
         }
-        // Disparar el evento siempre para actualizar la vista
         catalogNavigation.NavigateToCategories();
     }
 
-    private void NavigateToCategory(Category category)
+    private async void NavigateToCategory(Category category)
     {
-        // Solo navegar si no estamos en la página principal
-        if (navigationManager.Uri != navigationManager.BaseUri)
+        var uri = new Uri(navigationManager.Uri);
+        if (uri.AbsolutePath != "/")
         {
             navigationManager.NavigateTo("/");
+            await Task.Delay(100);
         }
-        // Disparar el evento siempre para actualizar la vista
         catalogNavigation.NavigateToCategory(category);
     }
 
-    private void NavigateToSubCategory(SubCategory subCategory)
+    private async void NavigateToSubCategory(SubCategory subCategory)
     {
-        // Solo navegar si no estamos en la página principal
-        if (navigationManager.Uri != navigationManager.BaseUri)
+        var uri = new Uri(navigationManager.Uri);
+        if (uri.AbsolutePath != "/")
         {
             navigationManager.NavigateTo("/");
+            await Task.Delay(100);
         }
-        // Disparar el evento siempre para actualizar la vista
         catalogNavigation.NavigateToSubCategory(subCategory);
     }
 }
