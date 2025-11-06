@@ -112,24 +112,38 @@ namespace fume.api.Controllers
         }
 
         [HttpGet("bycategory/{categoryId:int}")]
+        [AllowAnonymous]
         public async Task<ActionResult> GetByCategory(int categoryId)
         {
-            var subCategories = await _context.SubCategories
-                .Include(x => x.ProductSubCategories)
+            // Dos pasos: primero traer solo la longitud de la imagen, luego calcular HasImage en memoria
+            var tempResult = await _context.SubCategories
+                .AsNoTracking()
                 .Where(x => x.CategoryId == categoryId)
                 .OrderBy(x => x.Name)
-                .Select(x => new SubCategory
+                .Select(x => new
                 {
-                    Id = x.Id,
-                    Name = x.Name,
-                    CategoryId = x.CategoryId,
-                    ImageUrl = x.ImageUrl,
-                    Image = null, // No traer los bytes
-                    ProductSubCategories = x.ProductSubCategories
+                    x.Id,
+                    x.Name,
+                    x.CategoryId,
+                    x.ImageUrl,
+                    ImageLength = x.Image != null ? x.Image.Length : 0,
+                    ProductSubCategoriesNumber = x.ProductSubCategories != null ? x.ProductSubCategories.Count : 0
                 })
                 .ToListAsync();
 
-            return Ok(subCategories);
+            // Mapear a SubCategory con HasImage calculado en memoria
+            var result = tempResult.Select(x => new SubCategory
+            {
+                Id = x.Id,
+                Name = x.Name,
+                CategoryId = x.CategoryId,
+                ImageUrl = x.ImageUrl,
+                Image = null,
+                HasImage = x.ImageLength > 0,
+                ProductSubCategories = new List<ProductSubCategory>(new ProductSubCategory[x.ProductSubCategoriesNumber])
+            }).ToList();
+
+            return Ok(result);
         }
 
         [HttpPost]

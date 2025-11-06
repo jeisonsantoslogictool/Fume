@@ -831,7 +831,7 @@ else
     private async Task LoadCategoriesAsync()
     {
         loading = true;
-        var response = await repository.Get<List<Category>>("/api/categories");
+        var response = await repository.Get<List<Category>>("/api/categories?RecordsNumber=999");
 
         if (response.Error)
         {

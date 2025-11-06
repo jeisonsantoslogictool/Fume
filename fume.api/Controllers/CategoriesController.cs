@@ -60,8 +60,8 @@ namespace fume.api.Controllers
                     ImageUrl = x.ImageUrl,
                     Image = null,
                     HasImage = x.ImageLength > 0,
-                    SubCategories = null,
-                    ProductCategories = null
+                    SubCategories = new List<SubCategory>(new SubCategory[x.SubCategoriesNumber]), // Para que el contador funcione
+                    ProductCategories = new List<ProductCategory>(new ProductCategory[x.ProductCategoriesNumber]) // Para que el contador funcione
                 }).ToList();
 
                 return Ok(result);
@@ -74,6 +74,51 @@ namespace fume.api.Controllers
        
         }
 
+        [HttpGet("full")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetFull([FromQuery] PaginationDTO pagination)
+        {
+            try
+            {
+                var queryable = _context.categories
+                    .AsNoTracking()
+                    .Include(x => x.SubCategories)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(pagination.Filter))
+                {
+                    queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
+                }
+
+                var categories = await queryable
+                    .OrderBy(x => x.Name)
+                    .Paginate(pagination)
+                    .ToListAsync();
+
+                // Limpiar las imágenes para no enviar los bytes
+                foreach (var category in categories)
+                {
+                    category.Image = null;
+                    category.HasImage = false; // No necesitamos las imágenes de categorías en el menu
+
+                    if (category.SubCategories != null)
+                    {
+                        foreach (var subCategory in category.SubCategories)
+                        {
+                            subCategory.Image = null;
+                            subCategory.HasImage = false;
+                            subCategory.ProductSubCategories = null; // No necesitamos productos en el menu
+                        }
+                    }
+                }
+
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
         [HttpGet("totalPages")]
         public async Task<ActionResult> GetPages([FromQuery] PaginationDTO pagination)

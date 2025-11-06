@@ -72,7 +72,7 @@
     {
         try
         {
-            var response = await repository.Get<List<Category>>("/api/categories?RecordsNumber=100");
+            var response = await repository.Get<List<Category>>("/api/categories/full?RecordsNumber=100");
             if (!response.Error)
             {
                 categories = response.Response;
