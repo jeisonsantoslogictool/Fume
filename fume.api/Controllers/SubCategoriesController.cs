@@ -34,25 +34,38 @@ namespace fume.api.Controllers
                 queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
             }
 
-            var result = await queryable
+            var tempResult = await queryable
                 .OrderBy(x => x.Category.Name)
                 .ThenBy(x => x.Name)
                 .Paginate(pagination)
-                .Select(x => new SubCategory
+                .Select(x => new
                 {
-                    Id = x.Id,
-                    Name = x.Name,
-                    CategoryId = x.CategoryId,
-                    Category = new Category
-                    {
-                        Id = x.Category.Id,
-                        Name = x.Category.Name,
-                        Image = null // No traer bytes de imagen de categoría
-                    },
-                    Image = null, // No traer bytes de imagen
-                    ImageUrl = x.ImageUrl
+                    x.Id,
+                    x.Name,
+                    x.CategoryId,
+                    CategoryId_FK = x.Category.Id,
+                    CategoryName = x.Category.Name,
+                    x.ImageUrl,
+                    ImageLength = x.Image != null ? x.Image.Length : 0 // Solo traer la longitud
                 })
                 .ToListAsync();
+
+            // Mapear a SubCategory con HasImage calculado en memoria
+            var result = tempResult.Select(x => new SubCategory
+            {
+                Id = x.Id,
+                Name = x.Name,
+                CategoryId = x.CategoryId,
+                Category = new Category
+                {
+                    Id = x.CategoryId_FK,
+                    Name = x.CategoryName,
+                    Image = null
+                },
+                Image = null,
+                ImageUrl = x.ImageUrl,
+                HasImage = x.ImageLength > 0
+            }).ToList();
 
             return Ok(result);
         }
@@ -72,6 +85,14 @@ namespace fume.api.Controllers
             double count = await queryable.CountAsync();
             double totalPages = Math.Ceiling(count / pagination.RecordsNumber);
             return Ok(totalPages);
+        }
+
+        [HttpGet("count")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetCount()
+        {
+            var count = await _context.SubCategories.AsNoTracking().CountAsync();
+            return Ok(count);
         }
 
         [HttpGet("{id:int}")]

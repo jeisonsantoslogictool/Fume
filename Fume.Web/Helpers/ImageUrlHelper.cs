@@ -6,37 +6,34 @@ namespace Fume.Web.Helpers
 
         public static string GetCategoryImageUrl(fume.shared.Enttities.Category category)
         {
-           
-            if (category.Id > 0)
+            // Solo generar URL si tiene imagen
+            if (category.HasImage && category.Id > 0)
             {
                 return $"{BaseUrl}/api/images/categories/{category.Id}";
             }
 
-         
             return "/images/no-image.png";
         }
 
         public static string GetSubCategoryImageUrl(fume.shared.Enttities.SubCategory subCategory)
         {
-            
-            if (subCategory.Id > 0)
+            // Solo generar URL si tiene imagen
+            if (subCategory.HasImage && subCategory.Id > 0)
             {
                 return $"{BaseUrl}/api/images/subcategories/{subCategory.Id}";
             }
 
-         
             return "/images/no-image.png";
         }
 
         public static string GetProductImageUrl(fume.shared.Enttities.ProductImage productImage)
         {
-           
+            // Para productos, siempre intentamos cargar la URL si tiene ID
             if (productImage.Id > 0)
             {
                 return $"{BaseUrl}/api/images/products/{productImage.Id}";
             }
 
-            
             return "/images/no-image.png";
         }
     }

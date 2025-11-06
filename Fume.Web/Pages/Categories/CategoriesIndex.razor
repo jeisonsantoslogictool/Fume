@@ -6,6 +6,7 @@
 @inject IJSRuntime JS
 @attribute [Authorize(Roles = "Admin")]
 @using Microsoft.AspNetCore.Components.Web
+@using Fume.Web.Helpers
 
 <style>
     .dialog-backdrop-blur {
@@ -347,9 +348,9 @@ else
                     @onclick="OnSubCategoriesTabClick">
                  <i class="oi oi-tag"></i>
                  <span>Subcategorías</span>
-                 @if (allSubCategories != null)
+                 @if (subCategoriesCount > 0)
                  {
-                 <span class="tab-badge">@allSubCategories.Count</span>
+                 <span class="tab-badge">@subCategoriesCount</span>
                  }
                  </button>
               </li>
@@ -397,9 +398,12 @@ else
                     <MudItem xs="12" md="6" lg="4">
                        <div class="category-card">
                           <div class="category-name">
-                             @if (category.Image != null && category.Image.Length > 0)
+                             @{
+                                var categoryImageUrl = ImageUrlHelper.GetCategoryImageUrl(category);
+                             }
+                             @if (categoryImageUrl != "/images/no-image.png")
                              {
-                             <img src="data:image/png;base64,@category.ImageString"
+                             <img src="@categoryImageUrl"
                                 style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover;"
                                 alt="@category.Name" />
                              }
@@ -411,7 +415,14 @@ else
                              }
                              <div style="flex: 1;">
                                 <div>@category.Name</div>
-                                <span class="stats-badge">@category.ProductCategoriesNumber Productos</span>
+                                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                   <span class="stats-badge" style="background: #e3f2fd; color: #1976d2;">
+                                      <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Small" Style="font-size: 14px;" /> @category.SubCategoriesNumber Subcategorías
+                                   </span>
+                                   <span class="stats-badge">
+                                      <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Style="font-size: 14px;" /> @category.ProductCategoriesNumber Productos
+                                   </span>
+                                </div>
                              </div>
                           </div>
                           <div class="category-actions">
@@ -487,9 +498,12 @@ else
                      <MudItem xs="12" md="6" lg="4">
                         <div class="category-card">
                            <div class="category-name">
-                              @if (subCategory.Image != null && subCategory.Image.Length > 0)
+                              @{
+                                 var subCategoryImageUrl = ImageUrlHelper.GetSubCategoryImageUrl(subCategory);
+                              }
+                              @if (subCategoryImageUrl != "/images/no-image.png")
                               {
-                              <img src="data:image/png;base64,@subCategory.ImageString"
+                              <img src="@subCategoryImageUrl"
                                  style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover;"
                                  alt="@subCategory.Name" />
                               }
@@ -609,9 +623,12 @@ else
                                     </div>
                                     <div class="card-body">
                                         <div class="text-center mb-3">
-                                            @if (categoryDetail.Image != null && categoryDetail.Image.Length > 0)
+                                            @{
+                                                var detailCategoryImageUrl = ImageUrlHelper.GetCategoryImageUrl(categoryDetail);
+                                            }
+                                            @if (detailCategoryImageUrl != "/images/no-image.png")
                                             {
-                                                <img src="data:image/png;base64,@categoryDetail.ImageString"
+                                                <img src="@detailCategoryImageUrl"
                                                      style="width: 150px; height: 150px; border-radius: 15px; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
                                                      alt="@categoryDetail.Name" />
                                             }
@@ -650,9 +667,12 @@ else
                                                 @foreach (var subCategory in categoryDetail.SubCategories)
                                                 {
                                                     <div class="list-group-item d-flex align-items-center gap-3 mb-2" style="border-radius: 8px; border: 1px solid #e0e0e0;">
-                                                        @if (subCategory.Image != null && subCategory.Image.Length > 0)
+                                                        @{
+                                                            var detailSubCategoryImageUrl = ImageUrlHelper.GetSubCategoryImageUrl(subCategory);
+                                                        }
+                                                        @if (detailSubCategoryImageUrl != "/images/no-image.png")
                                                         {
-                                                            <img src="data:image/png;base64,@subCategory.ImageString"
+                                                            <img src="@detailSubCategoryImageUrl"
                                                                  style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;"
                                                                  alt="@subCategory.Name" />
                                                         }
@@ -721,6 +741,7 @@ else
     private int totalPages;
     private int activeTabIndex = 0;
     private bool loading = true;
+    private int subCategoriesCount = 0;
 
     [Parameter]
     [SupplyParameterFromQuery]
@@ -754,9 +775,11 @@ else
             loading = true;
             StateHasChanged();
 
-            // Solo cargar categorías inicialmente
-            // Las subcategorías se cargarán cuando el usuario haga clic en la pestaña
-            await LoadAsync();
+            // Cargar categorías y contador de subcategorías en paralelo
+            await Task.WhenAll(
+                LoadAsync(),
+                LoadSubCategoriesCountAsync()
+            );
 
             loading = false;
             StateHasChanged();
@@ -1017,6 +1040,16 @@ else
     }
 
     // SubCategories Methods
+    private async Task LoadSubCategoriesCountAsync()
+    {
+        // Solo cargar el contador, no todas las subcategorías
+        var response = await repository.Get<int>("/api/subcategories/count");
+        if (!response.Error)
+        {
+            subCategoriesCount = response.Response;
+        }
+    }
+
     private async Task LoadSubCategoriesAsync()
     {
         // Cargar con paginación grande para obtener todas, pero sin traer datos pesados
@@ -1029,6 +1062,7 @@ else
         }
 
         allSubCategories = response.Response;
+        subCategoriesCount = allSubCategories?.Count ?? 0; // Actualizar el contador
     }
 
     private async Task ApplySubCategoryFilterAsync()

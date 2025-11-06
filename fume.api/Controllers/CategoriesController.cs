@@ -27,28 +27,51 @@ namespace fume.api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
-            var queryable = _context.categories
-                .AsNoTracking() // No rastrear cambios = más rápido
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(pagination.Filter))
+            try
             {
-                queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
-            }
+                var queryable = _context.categories
+               .AsNoTracking() // No rastrear cambios = más rápido
+               .AsQueryable();
 
-            var result = await queryable
-                .OrderBy(x => x.Name)
-                .Paginate(pagination)
-                .Select(x => new Category
+                if (!string.IsNullOrWhiteSpace(pagination.Filter))
+                {
+                    queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
+                }
+
+                var tempResult = await queryable
+                    .OrderBy(x => x.Name)
+                    .Paginate(pagination)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.Name,
+                        x.ImageUrl,
+                        ImageLength = x.Image != null ? x.Image.Length : 0, // Solo traer la longitud
+                        SubCategoriesNumber = x.SubCategories != null ? x.SubCategories.Count : 0,
+                        ProductCategoriesNumber = x.ProductCategories != null ? x.ProductCategories.Count : 0
+                    })
+                    .ToListAsync();
+
+                // Mapear a Category con HasImage calculado en memoria
+                var result = tempResult.Select(x => new Category
                 {
                     Id = x.Id,
                     Name = x.Name,
                     ImageUrl = x.ImageUrl,
-                    Image = null // No traer los bytes ni relaciones innecesarias
-                })
-                .ToListAsync();
+                    Image = null,
+                    HasImage = x.ImageLength > 0,
+                    SubCategories = null,
+                    ProductCategories = null
+                }).ToList();
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (Exception ex )
+            {
+
+                throw;
+            }
+       
         }
 
 

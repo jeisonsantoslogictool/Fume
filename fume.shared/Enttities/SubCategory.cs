@@ -30,5 +30,9 @@ namespace fume.shared.Enttities
 
         [Display(Name = "URL de Imagen")]
         public string? ImageUrl { get; set; }
+
+        // Propiedad calculada para saber si tiene imagen (sin traer los bytes)
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public bool HasImage { get; set; }
     }
 }
