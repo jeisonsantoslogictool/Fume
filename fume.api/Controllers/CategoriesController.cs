@@ -150,6 +150,16 @@ namespace fume.api.Controllers
                 return NotFound();
             }
 
+            category.HasImage = category.Image != null && category.Image.Length > 0;
+
+            if (category.SubCategories != null)
+            {
+                foreach (var subCategory in category.SubCategories)
+                {
+                    subCategory.HasImage = subCategory.Image != null && subCategory.Image.Length > 0;
+                }
+            }
+
             return Ok(category);
         }
 

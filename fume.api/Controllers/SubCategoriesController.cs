@@ -46,11 +46,11 @@ namespace fume.api.Controllers
                     CategoryId_FK = x.Category.Id,
                     CategoryName = x.Category.Name,
                     x.ImageUrl,
-                    ImageLength = x.Image != null ? x.Image.Length : 0 // Solo traer la longitud
+                    ImageLength = x.Image != null ? x.Image.Length : 0,
+                    ProductSubCategoriesNumber = x.ProductSubCategories != null ? x.ProductSubCategories.Count : 0
                 })
                 .ToListAsync();
 
-            // Mapear a SubCategory con HasImage calculado en memoria
             var result = tempResult.Select(x => new SubCategory
             {
                 Id = x.Id,
@@ -64,7 +64,8 @@ namespace fume.api.Controllers
                 },
                 Image = null,
                 ImageUrl = x.ImageUrl,
-                HasImage = x.ImageLength > 0
+                HasImage = x.ImageLength > 0,
+                ProductSubCategories = new List<ProductSubCategory>(new ProductSubCategory[x.ProductSubCategoriesNumber])
             }).ToList();
 
             return Ok(result);
