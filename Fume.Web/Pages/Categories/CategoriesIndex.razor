@@ -973,14 +973,30 @@ else
 
         try
         {
-            // Ejecutar ambas llamadas HTTP en PARALELO
             var task1 = repository.Get<List<Category>>(url1);
             var task2 = repository.Get<int>(url2);
 
             await Task.WhenAll(task1, task2);
 
-            categories = task1.Result.Response!;
-            totalPages = task2.Result.Response!;
+            var responseCategories = task1.Result;
+            var responseTotalPages = task2.Result;
+
+            if (responseCategories.Error)
+            {
+                var message = await responseCategories.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                return;
+            }
+
+            if (responseTotalPages.Error)
+            {
+                var message = await responseTotalPages.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                return;
+            }
+
+            categories = responseCategories.Response;
+            totalPages = responseTotalPages.Response;
         }
         catch (Exception ex)
         {
@@ -1024,7 +1040,7 @@ else
             var toast2 = sweetAlertService.Mixin(new SweetAlertOptions
             {
                 Toast = true,
-                Position = SweetAlertPosition.TopEnd,
+                Position = SweetAlertPosition.BottomRight,
                 ShowConfirmButton = false,
                 Timer = 5000
             });

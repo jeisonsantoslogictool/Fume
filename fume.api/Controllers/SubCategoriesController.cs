@@ -196,6 +196,10 @@ namespace fume.api.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                subCategory.HasImage = subCategory.Image != null && subCategory.Image.Length > 0;
+                subCategory.ProductSubCategories = new List<ProductSubCategory>();
+
                 return Ok(subCategory);
             }
             catch (DbUpdateException dbUpdateException)
@@ -261,6 +265,13 @@ namespace fume.api.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                subCategory.HasImage = subCategory.Image != null && subCategory.Image.Length > 0;
+                if (subCategory.ProductSubCategories == null)
+                {
+                    subCategory.ProductSubCategories = new List<ProductSubCategory>();
+                }
+
                 return Ok(subCategory);
             }
             catch (DbUpdateException dbUpdateException)

@@ -24,6 +24,7 @@ namespace fume.api.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult> Get([FromQuery] PaginationDTO pagination)
         {
             var queryable = _context.Products
@@ -308,6 +309,7 @@ namespace fume.api.Controllers
 
 
         [HttpGet("subcategory/{subcategoryId:int}")]
+        [AllowAnonymous]
         public async Task<ActionResult> GetBySubcategoryAsync(int subcategoryId)
         {
             var products = await _context.Products

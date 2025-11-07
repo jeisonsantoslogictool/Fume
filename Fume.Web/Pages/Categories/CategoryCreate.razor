@@ -247,20 +247,21 @@
                 return;
             }
 
+            wasSuccessful = true;
+            isLoading = false;
+
             await sweetAlertService.FireAsync("Éxito", "Categoría creada exitosamente", SweetAlertIcon.Success);
 
-            // Marcar como exitoso
-            wasSuccessful = true;
-
-            // Invocar el callback si existe
             if (OnSuccessCallback.HasDelegate)
             {
                 await OnSuccessCallback.InvokeAsync();
             }
 
-            await Cancel();
-            isLoading = false;
-            StateHasChanged();
+            if (Modal != null)
+            {
+                await Modal.HideAsync();
+            }
+            ResetForm();
         }
         catch (Exception ex)
         {
@@ -273,6 +274,9 @@
     public async Task Cancel()
     {
         wasSuccessful = false;
-        await Modal.HideAsync();
+        if (Modal != null)
+        {
+            await Modal.HideAsync();
+        }
     }
 }

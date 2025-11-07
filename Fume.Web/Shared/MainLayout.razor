@@ -27,10 +27,19 @@
                        ClipMode="DrawerClipMode.Always"
                        Variant="@DrawerVariant.Mini"
                        OpenMiniOnHover="true">
-               
+
                 <NavMenu />
             </MudDrawer>
         </Authorized>
+        <NotAuthorized>
+            <MudDrawer Open="true"
+                       Elevation="2"
+                       ClipMode="DrawerClipMode.Always"
+                       Variant="@DrawerVariant.Persistent"
+                       Width="280px">
+                <NavMenu />
+            </MudDrawer>
+        </NotAuthorized>
     </AuthorizeView>
 
     <MudMainContent >
