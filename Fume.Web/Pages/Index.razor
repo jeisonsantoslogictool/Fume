@@ -853,6 +853,12 @@ else
     {
         if (isNavigating) return;
 
+        // Si ya estamos viendo esta categoría, no hacer nada
+        if (currentView == ViewType.SubCategories && selectedCategory?.Id == category.Id)
+        {
+            return;
+        }
+
         isNavigating = true;
         try
         {
@@ -884,16 +890,22 @@ else
     {
         if (isNavigating) return;
 
+    
+        if (currentView == ViewType.Products && selectedSubCategory?.Id == subCategory.Id)
+        {
+            return;
+        }
+
         isNavigating = true;
         try
         {
             loading = true;
             selectedSubCategory = subCategory;
 
-            // Limpiar el estado de imágenes cargadas
+            
             loadedImages.Clear();
 
-            // Cargar productos que tengan esta subcategoría
+            
             var response = await repository.Get<List<Product>>($"/api/products/subcategory/{subCategory.Id}");
 
             if (response.Error)
