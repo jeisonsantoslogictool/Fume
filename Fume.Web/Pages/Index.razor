@@ -706,6 +706,9 @@ else
     // Para manejar el estado de carga de imágenes
     private HashSet<int> loadedImages = new HashSet<int>();
 
+    // Para prevenir clics repetitivos
+    private bool isNavigating = false;
+
     [Parameter]
     [SupplyParameterFromQuery]
     public string Filter { get; set; } = "";
@@ -848,46 +851,68 @@ else
 
     private async Task GoToSubCategories(Category category)
     {
-        loading = true;
-        selectedCategory = category;
+        if (isNavigating) return;
 
-        var response = await repository.Get<List<SubCategory>>($"/api/subcategories/bycategory/{category.Id}");
-
-        if (response.Error)
+        isNavigating = true;
+        try
         {
-            var message = await response.GetErrorMessageAsync();
-            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-            loading = false;
-            return;
-        }
+            loading = true;
+            selectedCategory = category;
 
-        subCategories = response.Response;
-        currentView = ViewType.SubCategories;
-        loading = false;
+            var response = await repository.Get<List<SubCategory>>($"/api/subcategories/bycategory/{category.Id}");
+
+            if (response.Error)
+            {
+                var message = await response.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                loading = false;
+                return;
+            }
+
+            subCategories = response.Response;
+            currentView = ViewType.SubCategories;
+            loading = false;
+        }
+        finally
+        {
+            await Task.Delay(300);
+            isNavigating = false;
+        }
     }
 
     private async Task GoToProducts(SubCategory subCategory)
     {
-        loading = true;
-        selectedSubCategory = subCategory;
+        if (isNavigating) return;
 
-        // Limpiar el estado de imágenes cargadas
-        loadedImages.Clear();
-
-        // Cargar productos que tengan esta subcategoría
-        var response = await repository.Get<List<Product>>($"/api/products/subcategory/{subCategory.Id}");
-
-        if (response.Error)
+        isNavigating = true;
+        try
         {
-            var message = await response.GetErrorMessageAsync();
-            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-            loading = false;
-            return;
-        }
+            loading = true;
+            selectedSubCategory = subCategory;
 
-        products = response.Response;
-        currentView = ViewType.Products;
-        loading = false;
+            // Limpiar el estado de imágenes cargadas
+            loadedImages.Clear();
+
+            // Cargar productos que tengan esta subcategoría
+            var response = await repository.Get<List<Product>>($"/api/products/subcategory/{subCategory.Id}");
+
+            if (response.Error)
+            {
+                var message = await response.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+                loading = false;
+                return;
+            }
+
+            products = response.Response;
+            currentView = ViewType.Products;
+            loading = false;
+        }
+        finally
+        {
+            await Task.Delay(300);
+            isNavigating = false;
+        }
     }
 
     private bool IsImageLoaded(int productId)
