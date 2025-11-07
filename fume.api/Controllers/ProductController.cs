@@ -79,6 +79,7 @@ namespace fume.api.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAsync(int id)
         {
             var product = await _context.Products

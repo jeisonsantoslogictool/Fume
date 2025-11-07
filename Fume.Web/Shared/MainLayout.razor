@@ -5,12 +5,8 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="2" Dense="true" Color="Color.Info">
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-            </Authorized>
-        </AuthorizeView>
+    <MudAppBar Elevation="2" Dense="true" Color="Color.Info">   
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         <div class="logo-section">
             <img src="/Logo.png" alt="Fume Logo" @onclick="@(() => navigationManager.NavigateTo("/"))" style="border-radius: 45px; height:42px !important" />
         </div>
@@ -32,11 +28,12 @@
             </MudDrawer>
         </Authorized>
         <NotAuthorized>
-            <MudDrawer Open="true"
+            <MudDrawer @bind-Open="_drawerOpen"
                        Elevation="2"
                        ClipMode="DrawerClipMode.Always"
-                       Variant="@DrawerVariant.Persistent"
-                       Width="280px">
+                       Variant="@DrawerVariant.Mini"
+                       OpenMiniOnHover="true">
+
                 <NavMenu />
             </MudDrawer>
         </NotAuthorized>

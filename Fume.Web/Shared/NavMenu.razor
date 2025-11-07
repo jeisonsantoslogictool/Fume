@@ -7,9 +7,7 @@
     <MudNavLink Href="/" Icon="@Icons.Material.Filled.ShoppingCart" IconColor="Color.Info" OnClick="NavigateToHome">
         Fume
     </MudNavLink>
-    <MudNavLink Href="/catalog" Icon="@Icons.Material.Filled.ShoppingBag" IconColor="Color.Success">
-        Catálogo
-    </MudNavLink>
+ 
 
     <MudDivider Class="my-2" />
 
@@ -62,6 +60,7 @@
 
 @code {
     private List<Category>? categories;
+    private bool isNavigating = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -80,41 +79,73 @@
         }
         catch
         {
-            // Silently fail - navigation menu will just not show categories
             categories = new List<Category>();
         }
     }
 
     private async void NavigateToHome()
     {
-        var uri = new Uri(navigationManager.Uri);
-        if (uri.AbsolutePath != "/")
+        if (isNavigating) return;
+
+        isNavigating = true;
+        try
         {
-            navigationManager.NavigateTo("/");
-            await Task.Delay(100);
+            var uri = new Uri(navigationManager.Uri);
+            if (uri.AbsolutePath != "/")
+            {
+                navigationManager.NavigateTo("/");
+                await Task.Delay(100);
+            }
+            catalogNavigation.NavigateToCategories();
         }
-        catalogNavigation.NavigateToCategories();
+        finally
+        {
+            await Task.Delay(300);
+            isNavigating = false;
+        }
     }
 
     private async void NavigateToCategory(Category category)
     {
-        var uri = new Uri(navigationManager.Uri);
-        if (uri.AbsolutePath != "/")
+        if (isNavigating) return;
+
+        isNavigating = true;
+        try
         {
-            navigationManager.NavigateTo("/");
-            await Task.Delay(100);
+            var uri = new Uri(navigationManager.Uri);
+            if (uri.AbsolutePath != "/")
+            {
+                navigationManager.NavigateTo("/");
+                await Task.Delay(100);
+            }
+            catalogNavigation.NavigateToCategory(category);
         }
-        catalogNavigation.NavigateToCategory(category);
+        finally
+        {
+            await Task.Delay(300);
+            isNavigating = false;
+        }
     }
 
     private async void NavigateToSubCategory(SubCategory subCategory)
     {
-        var uri = new Uri(navigationManager.Uri);
-        if (uri.AbsolutePath != "/")
+        if (isNavigating) return;
+
+        isNavigating = true;
+        try
         {
-            navigationManager.NavigateTo("/");
-            await Task.Delay(100);
+            var uri = new Uri(navigationManager.Uri);
+            if (uri.AbsolutePath != "/")
+            {
+                navigationManager.NavigateTo("/");
+                await Task.Delay(100);
+            }
+            catalogNavigation.NavigateToSubCategory(subCategory);
         }
-        catalogNavigation.NavigateToSubCategory(subCategory);
+        finally
+        {
+            await Task.Delay(300);
+            isNavigating = false;
+        }
     }
 }

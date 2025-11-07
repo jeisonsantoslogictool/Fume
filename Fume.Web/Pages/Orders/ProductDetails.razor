@@ -169,14 +169,15 @@
             <MudItem xs="12" md="6">
                 <MudPaper Elevation="2" Class="pa-4">
                     <div class="main-image-container">
-                        @if (SelectedImage != null)
+                        @if (SelectedImageId.HasValue)
                         {
-                            <img src="data:image/png;base64,@SelectedImage" alt="@Product.Name" />
+                            var imageUrl = ImageUrlHelper.GetProductImageUrl(Product.ProductImages.First(x => x.Id == SelectedImageId.Value));
+                            <img src="@imageUrl" alt="@Product.Name" />
                         }
                         else if (Product.ProductImages != null && Product.ProductImages.Any())
                         {
-                            var firstImage = Convert.ToBase64String(Product.ProductImages.First().Imagefile);
-                            <img src="data:image/png;base64,@firstImage" alt="@Product.Name" />
+                            var imageUrl = ImageUrlHelper.GetProductImageUrl(Product.ProductImages.First());
+                            <img src="@imageUrl" alt="@Product.Name" />
                         }
                         else
                         {
@@ -189,10 +190,10 @@
                         <div class="thumbnail-grid">
                             @foreach (var image in Product.ProductImages)
                             {
-                                var imageBase64 = Convert.ToBase64String(image.Imagefile);
-                                <div class="thumbnail-item @(imageBase64 == SelectedImage ? "active" : "")"
-                                     @onclick="() => SelectImage(imageBase64)">
-                                    <img src="data:image/png;base64,@imageBase64" alt="Thumbnail" />
+                                var imageUrl = ImageUrlHelper.GetProductImageUrl(image);
+                                <div class="thumbnail-item @(image.Id == SelectedImageId ? "active" : "")"
+                                     @onclick="() => SelectImage(image.Id)">
+                                    <img src="@imageUrl" alt="Thumbnail" />
                                 </div>
                             }
                         </div>
@@ -328,7 +329,7 @@
     private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
 
     private Product? Product { get; set; }
-    private string? SelectedImage { get; set; }
+    private int? SelectedImageId { get; set; }
     private int Quantity { get; set; } = 1;
     private bool isLoading = false;
     private bool isAuthenticated = false;
@@ -355,7 +356,7 @@
                 Product = response.Response;
                 if (Product?.ProductImages != null && Product.ProductImages.Any())
                 {
-                    SelectedImage = Convert.ToBase64String(Product.ProductImages.First().Imagefile);
+                    SelectedImageId = Product.ProductImages.First().Id;
                 }
             }
             else
@@ -371,9 +372,9 @@
         }
     }
 
-    private void SelectImage(string imageBase64)
+    private void SelectImage(int imageId)
     {
-        SelectedImage = imageBase64;
+        SelectedImageId = imageId;
     }
 
     private void IncreaseQuantity()
