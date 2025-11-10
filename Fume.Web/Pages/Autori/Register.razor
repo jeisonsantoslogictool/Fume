@@ -675,7 +675,7 @@
                 return;
             }
 
-            await loginService.LoginAsync(responseHttp.Response!.Token);
+            // await loginService.LoginAsync(responseHttp.Response!.Token);
 
             await sweetAlertService.FireAsync(new SweetAlertOptions
             {
@@ -685,7 +685,7 @@
                 Timer = 1500,
                 ShowConfirmButton = false,
                 Toast = true,
-                Position = SweetAlertPosition.TopEnd
+                Position = SweetAlertPosition.BottomEnd
             });
 
             navigationManager.NavigateTo("/");

@@ -1,11 +1,12 @@
 @page "/"
+@page "/category/{CategoryId:int}"
+@page "/subcategory/{SubCategoryId:int}"
 @inject IRepository repository
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
 @inject Fume.Web.Services.CatalogNavigationService catalogNavigation
 @inject Fume.Web.Services.CartService cartService
 @using Microsoft.AspNetCore.Components.Web
-@inherits LayoutComponentBase
 @layout MainLayout
 @using MudBlazor
 @using Fume.Web.Helpers
@@ -105,7 +106,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: height 0.3s ease;
+        transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .banner-section.small {
@@ -135,6 +136,16 @@
         z-index: 1;
         text-align: center;
         color: white;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
     }
 
     .banner-content h1 {
@@ -142,11 +153,13 @@
         font-weight: bold;
         margin-bottom: 20px;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        transition: font-size 0.2s ease;
     }
 
     .banner-content p {
         font-size: 1.5rem;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        transition: font-size 0.2s ease;
     }
 
     /* Breadcrumb */
@@ -179,7 +192,18 @@
         grid-template-columns: repeat(4, 1fr);
         gap: 0;
         padding: 20px 0;
-        
+        animation: fadeInUp 0.3s ease-out;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .category-item {
@@ -258,6 +282,7 @@
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 25px;
         padding: 20px 0;
+        animation: fadeInUp 0.3s ease-out;
     }
 
     .product-card {
@@ -688,6 +713,7 @@ else
     private enum ViewType { Categories, SubCategories, Products }
 
     private ViewType currentView = ViewType.Categories;
+    private ViewType? pendingView = null;
     private bool loading = true;
     private bool isAuthenticated;
     private bool firstRender = true;
@@ -708,6 +734,31 @@ else
     // Para el mini-carrito
     private bool isMiniCartOpen = false;
 
+    // Cache de subcategorías por ID de categoría
+    private Dictionary<int, List<SubCategory>> subCategoriesCache = new Dictionary<int, List<SubCategory>>();
+
+    // Cache de productos por ID de subcategoría
+    private Dictionary<int, List<Product>> productsCache = new Dictionary<int, List<Product>>();
+
+    // Control de renders
+    private bool shouldRender = true;
+
+    protected override bool ShouldRender()
+    {
+        if (!shouldRender)
+        {
+            shouldRender = true;
+            return false;
+        }
+        return true;
+    }
+
+    [Parameter]
+    public int? CategoryId { get; set; }
+
+    [Parameter]
+    public int? SubCategoryId { get; set; }
+
     [Parameter]
     [SupplyParameterFromQuery]
     public string Filter { get; set; } = "";
@@ -717,12 +768,8 @@ else
 
     protected override void OnInitialized()
     {
-        // Suscribirse a los eventos del servicio de navegación
-        catalogNavigation.OnCategoriesRequested += HandleCategoriesRequested;
-        catalogNavigation.OnCategorySelected += HandleCategorySelected;
-        catalogNavigation.OnSubCategorySelected += HandleSubCategorySelected;
-
-        // Suscribirse a los eventos del carrito
+        // Solo suscribirse al evento de prefetch y carrito
+        catalogNavigation.OnSubCategoryPrefetch += HandleSubCategoryPrefetch;
         cartService.OnChange += OnCartChanged;
     }
 
@@ -735,7 +782,6 @@ else
     {
         if (firstRender)
         {
-            this.firstRender = false;
             await CheckIsAuthenticatedAsync();
 
             // Inicializar el carrito si el usuario está autenticado
@@ -744,88 +790,88 @@ else
                 await cartService.InitializeAsync();
             }
 
+            // Cargar categorías primero
             await LoadCategoriesAsync();
+
+            // Luego cargar la vista basada en parámetros de ruta
+            await LoadViewBasedOnParametersAsync();
+
+            this.firstRender = false;
             StateHasChanged();
         }
     }
 
     protected async override Task OnParametersSetAsync()
     {
+        // Debug: Ver qué parámetros se están recibiendo
+        Console.WriteLine($"OnParametersSetAsync - CategoryId: {CategoryId}, SubCategoryId: {SubCategoryId}");
+
+        // Siempre cargar la vista basada en parámetros cuando cambian
         if (!firstRender)
         {
-            await CheckIsAuthenticatedAsync();
-
-            // Inicializar el carrito si el usuario está autenticado
-            if (isAuthenticated)
-            {
-                await cartService.InitializeAsync();
-            }
+            await LoadViewBasedOnParametersAsync();
         }
+    }
+
+    private async Task LoadViewBasedOnParametersAsync()
+    {
+        Console.WriteLine($"LoadViewBasedOnParametersAsync START - SubCategoryId: {SubCategoryId}, CategoryId: {CategoryId}, currentView: {currentView}");
+
+        // Si hay SubCategoryId, mostrar productos
+        if (SubCategoryId.HasValue && SubCategoryId.Value > 0)
+        {
+            Console.WriteLine($"Loading products for SubCategoryId: {SubCategoryId.Value}");
+            await LoadProductsBySubCategoryIdAsync(SubCategoryId.Value);
+            Console.WriteLine($"After LoadProductsBySubCategoryIdAsync - currentView: {currentView}");
+        }
+        // Si hay CategoryId, mostrar subcategorías
+        else if (CategoryId.HasValue && CategoryId.Value > 0)
+        {
+            Console.WriteLine($"Loading subcategories for CategoryId: {CategoryId.Value}");
+            await LoadSubCategoriesByCategoryIdAsync(CategoryId.Value);
+            Console.WriteLine($"After LoadSubCategoriesByCategoryIdAsync - currentView: {currentView}");
+        }
+        // Si no hay parámetros, mostrar categorías
+        else if (string.IsNullOrWhiteSpace(Filter))
+        {
+            Console.WriteLine("Loading categories view");
+            await LoadCategoriesViewAsync();
+            Console.WriteLine($"After LoadCategoriesViewAsync - currentView: {currentView}");
+        }
+
+        Console.WriteLine($"LoadViewBasedOnParametersAsync END - currentView: {currentView}");
     }
 
     public void Dispose()
     {
         // Desuscribirse de los eventos cuando el componente se destruye
-        catalogNavigation.OnCategoriesRequested -= HandleCategoriesRequested;
-        catalogNavigation.OnCategorySelected -= HandleCategorySelected;
-        catalogNavigation.OnSubCategorySelected -= HandleSubCategorySelected;
+        catalogNavigation.OnSubCategoryPrefetch -= HandleSubCategoryPrefetch;
         cartService.OnChange -= OnCartChanged;
     }
 
-    private void HandleCategoriesRequested()
-    {
-        InvokeAsync(async () =>
-        {
-            // Solo recargar si no hay categorías
-            if (categories == null || !categories.Any())
-            {
-                await LoadCategoriesAsync();
-            }
-            else
-            {
-                // Ya tenemos las categorías, solo cambiar la vista
-                selectedCategory = null;
-                selectedSubCategory = null;
-                subCategories = null;
-                products = null;
-                Filter = string.Empty;
-                currentView = ViewType.Categories;
-                loading = false;
-            }
-            StateHasChanged();
-        });
-    }
 
-    private void HandleCategorySelected(Category category)
+    private void HandleSubCategoryPrefetch(SubCategory subCategory)
     {
-        InvokeAsync(async () =>
+        // Pre-cargar productos en segundo plano sin cambiar la vista
+        _ = Task.Run(async () =>
         {
-            await GoToSubCategories(category);
-            StateHasChanged();
-        });
-    }
-
-    private void HandleSubCategorySelected(SubCategory subCategory)
-    {
-        InvokeAsync(async () =>
-        {
-            // Necesitamos cargar la categoría padre primero
-            if (subCategory.Category != null)
+            // Solo pre-cargar si no está en cache
+            if (!productsCache.ContainsKey(subCategory.Id))
             {
-                selectedCategory = subCategory.Category;
-            }
-            else
-            {
-                // Si no viene la categoría, la cargamos
-                var categoryResponse = await repository.Get<Category>($"/api/categories/{subCategory.CategoryId}");
-                if (!categoryResponse.Error)
+                try
                 {
-                    selectedCategory = categoryResponse.Response;
+                    var response = await repository.Get<List<Product>>($"/api/products/subcategory/{subCategory.Id}");
+                    if (!response.Error && response.Response != null)
+                    {
+                        // Guardar en cache sin cambiar la UI
+                        productsCache[subCategory.Id] = response.Response;
+                    }
+                }
+                catch
+                {
+                    // Silenciar errores de prefetch
                 }
             }
-
-            await GoToProducts(subCategory);
-            StateHasChanged();
         });
     }
 
@@ -837,6 +883,7 @@ else
 
     private async Task LoadCategoriesAsync()
     {
+        Console.WriteLine("LoadCategoriesAsync START");
         loading = true;
         var response = await repository.Get<List<Category>>("/api/categories?RecordsNumber=999");
 
@@ -849,27 +896,70 @@ else
         }
 
         categories = response.Response;
-        currentView = ViewType.Categories;
+        // DON'T set currentView here - it will be set by LoadViewBasedOnParametersAsync
+        // currentView = ViewType.Categories;
         loading = false;
+        Console.WriteLine("LoadCategoriesAsync END - categories loaded, NOT setting currentView");
     }
 
-    private async Task GoToSubCategories(Category category)
+    private async Task LoadCategoriesViewAsync()
+    {
+        if (categories == null || !categories.Any())
+        {
+            await LoadCategoriesAsync();
+        }
+        else
+        {
+            selectedCategory = null;
+            selectedSubCategory = null;
+            subCategories = null;
+            products = null;
+            currentView = ViewType.Categories;
+            loading = false;
+        }
+    }
+
+    private async Task LoadSubCategoriesByCategoryIdAsync(int categoryId)
     {
         if (isNavigating) return;
-
-        // Si ya estamos viendo esta categoría, no hacer nada
-        if (currentView == ViewType.SubCategories && selectedCategory?.Id == category.Id)
-        {
-            return;
-        }
-
         isNavigating = true;
+
         try
         {
-            loading = true;
-            selectedCategory = category;
+            // Intentar obtener del cache primero
+            if (subCategoriesCache.TryGetValue(categoryId, out var cachedSubCategories))
+            {
+                // Cargar la categoría si no está seleccionada
+                if (selectedCategory?.Id != categoryId)
+                {
+                    selectedCategory = categories?.FirstOrDefault(c => c.Id == categoryId);
+                }
 
-            var response = await repository.Get<List<SubCategory>>($"/api/subcategories/bycategory/{category.Id}");
+                subCategories = cachedSubCategories;
+                currentView = ViewType.SubCategories;
+                loading = false;
+                return;
+            }
+
+            // Cargar desde API
+            loading = true;
+            currentView = ViewType.SubCategories;
+
+            // Cargar categoría si es necesario
+            if (selectedCategory?.Id != categoryId)
+            {
+                selectedCategory = categories?.FirstOrDefault(c => c.Id == categoryId);
+                if (selectedCategory == null)
+                {
+                    var catResponse = await repository.Get<Category>($"/api/categories/{categoryId}");
+                    if (!catResponse.Error)
+                    {
+                        selectedCategory = catResponse.Response;
+                    }
+                }
+            }
+
+            var response = await repository.Get<List<SubCategory>>($"/api/subcategories/bycategory/{categoryId}");
 
             if (response.Error)
             {
@@ -880,37 +970,120 @@ else
             }
 
             subCategories = response.Response;
-            currentView = ViewType.SubCategories;
+            if (subCategories != null)
+            {
+                subCategoriesCache[categoryId] = subCategories;
+            }
+
             loading = false;
         }
         finally
         {
-            await Task.Delay(300);
             isNavigating = false;
         }
     }
 
-    private async Task GoToProducts(SubCategory subCategory)
+    private async Task LoadProductsBySubCategoryIdAsync(int subCategoryId)
     {
+        Console.WriteLine($"LoadProductsBySubCategoryIdAsync START - subCategoryId: {subCategoryId}, isNavigating: {isNavigating}");
+
         if (isNavigating) return;
-
-    
-        if (currentView == ViewType.Products && selectedSubCategory?.Id == subCategory.Id)
-        {
-            return;
-        }
-
         isNavigating = true;
+
         try
         {
-            loading = true;
-            selectedSubCategory = subCategory;
+            Console.WriteLine($"Setting currentView to Products for subCategoryId: {subCategoryId}");
+            currentView = ViewType.Products;
 
-            
+            // Cargar la subcategoría seleccionada primero
+            if (selectedSubCategory?.Id != subCategoryId)
+            {
+                // Buscar en las subcategorías cargadas en memoria
+                selectedSubCategory = subCategories?.FirstOrDefault(sc => sc != null && sc.Id == subCategoryId);
+
+                // Si no está en las subcategorías actuales, buscar en el cache de subcategorías
+                if (selectedSubCategory == null)
+                {
+                    foreach (var cachedSubCats in subCategoriesCache.Values)
+                    {
+                        if (cachedSubCats != null)
+                        {
+                            selectedSubCategory = cachedSubCats.FirstOrDefault(sc => sc != null && sc.Id == subCategoryId);
+                            if (selectedSubCategory != null)
+                            {
+                                // Cargar la categoría padre
+                                if (selectedSubCategory.Category != null)
+                                {
+                                    selectedCategory = selectedSubCategory.Category;
+                                }
+                                else if (selectedSubCategory.CategoryId > 0 && categories != null)
+                                {
+                                    selectedCategory = categories.FirstOrDefault(c => c.Id == selectedSubCategory.CategoryId);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Si no está en el cache, buscar en todas las categorías cargadas
+                if (selectedSubCategory == null && categories != null)
+                {
+                    foreach (var cat in categories)
+                    {
+                        if (cat != null && cat.SubCategories != null && cat.SubCategories.Any())
+                        {
+                            selectedSubCategory = cat.SubCategories.FirstOrDefault(sc => sc != null && sc.Id == subCategoryId);
+                            if (selectedSubCategory != null)
+                            {
+                                selectedCategory = cat;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Si aún no se encuentra, cargar desde API
+                if (selectedSubCategory == null)
+                {
+                    var subCatResponse = await repository.Get<SubCategory>($"/api/subcategories/{subCategoryId}");
+                    if (!subCatResponse.Error && subCatResponse.Response != null)
+                    {
+                        selectedSubCategory = subCatResponse.Response;
+
+                        // Cargar la categoría padre si viene
+                        if (selectedSubCategory.Category != null)
+                        {
+                            selectedCategory = selectedSubCategory.Category;
+                        }
+                        else if (selectedSubCategory.CategoryId > 0)
+                        {
+                            var catResponse = await repository.Get<Category>($"/api/categories/{selectedSubCategory.CategoryId}");
+                            if (!catResponse.Error)
+                            {
+                                selectedCategory = catResponse.Response;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Intentar obtener productos del cache
+            if (productsCache.TryGetValue(subCategoryId, out var cachedProducts))
+            {
+                Console.WriteLine($"Found {cachedProducts?.Count ?? 0} products in cache for subCategoryId: {subCategoryId}");
+                products = cachedProducts;
+                loading = false;
+                Console.WriteLine($"LoadProductsBySubCategoryIdAsync - Using cached products, currentView: {currentView}");
+                return;
+            }
+
+            // Cargar productos desde API
+            Console.WriteLine($"Loading products from API for subCategoryId: {subCategoryId}");
+            loading = true;
             loadedImages.Clear();
 
-            
-            var response = await repository.Get<List<Product>>($"/api/products/subcategory/{subCategory.Id}");
+            var response = await repository.Get<List<Product>>($"/api/products/subcategory/{subCategoryId}");
 
             if (response.Error)
             {
@@ -921,15 +1094,21 @@ else
             }
 
             products = response.Response;
-            currentView = ViewType.Products;
+            if (products != null)
+            {
+                productsCache[subCategoryId] = products;
+                Console.WriteLine($"Loaded {products.Count} products from API and cached them");
+            }
+
             loading = false;
+            Console.WriteLine($"LoadProductsBySubCategoryIdAsync END - currentView: {currentView}, products count: {products?.Count ?? 0}");
         }
         finally
         {
-            await Task.Delay(300);
             isNavigating = false;
         }
     }
+
 
     private bool IsImageLoaded(int productId)
     {
@@ -942,14 +1121,19 @@ else
         StateHasChanged();
     }
 
-    private async Task GoToHome()
+    private void GoToHome()
     {
-        selectedCategory = null;
-        selectedSubCategory = null;
-        subCategories = null;
-        products = null;
-        Filter = string.Empty;
-        await LoadCategoriesAsync();
+        navigationManager.NavigateTo("/", forceLoad: false);
+    }
+
+    private void GoToSubCategories(Category category)
+    {
+        navigationManager.NavigateTo($"/category/{category.Id}", forceLoad: false);
+    }
+
+    private void GoToProducts(SubCategory subCategory)
+    {
+        navigationManager.NavigateTo($"/subcategory/{subCategory.Id}", forceLoad: false);
     }
 
     private async Task SearchProducts()

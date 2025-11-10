@@ -8,6 +8,7 @@ namespace Fume.Web.Services
         public event Action? OnCategoriesRequested;
         public event Action<Category>? OnCategorySelected;
         public event Action<SubCategory>? OnSubCategorySelected;
+        public event Action<SubCategory>? OnSubCategoryPrefetch;
 
         public void NavigateToCategories()
         {
@@ -22,6 +23,11 @@ namespace Fume.Web.Services
         public void NavigateToSubCategory(SubCategory subCategory)
         {
             OnSubCategorySelected?.Invoke(subCategory);
+        }
+
+        public void PrefetchSubCategory(SubCategory subCategory)
+        {
+            OnSubCategoryPrefetch?.Invoke(subCategory);
         }
     }
 }

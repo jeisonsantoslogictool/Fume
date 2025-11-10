@@ -4,7 +4,7 @@
 
 <MudNavMenu>
 
-    <MudNavLink Href="/" Icon="@Icons.Material.Filled.ShoppingCart" IconColor="Color.Info" OnClick="NavigateToHome">
+    <MudNavLink Href="/" Icon="@Icons.Material.Filled.ShoppingCart" IconColor="Color.Info" Style="cursor: pointer;">
         Fume
     </MudNavLink>
  
@@ -20,7 +20,8 @@
                 {
                     @foreach (var subCategory in category.SubCategories)
                     {
-                        <MudNavLink OnClick="@(() => NavigateToSubCategory(subCategory))"
+                        <MudNavLink Href="@($"/subcategory/{subCategory.Id}")"
+                                    @onmouseenter="@(() => PrefetchSubCategory(subCategory))"
                                     Icon="@Icons.Material.Filled.Label"
                                     IconColor="Color.Secondary">
                             @subCategory.Name
@@ -29,7 +30,7 @@
                 }
                 else
                 {
-                    <MudNavLink OnClick="@(() => NavigateToCategory(category))"
+                    <MudNavLink Href="@($"/category/{category.Id}")"
                                 Icon="@Icons.Material.Filled.Inbox"
                                 IconColor="Color.Default">
                         Ver categoría
@@ -59,11 +60,22 @@
 
 @code {
     private List<Category>? categories;
-    private bool isNavigating = false;
+    private HashSet<int> prefetchedSubCategories = new HashSet<int>();
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCategoriesAsync();
+    }
+
+    private void PrefetchSubCategory(SubCategory subCategory)
+    {
+        // Marcar como pre-cargada para evitar múltiples llamadas
+        if (!prefetchedSubCategories.Contains(subCategory.Id))
+        {
+            prefetchedSubCategories.Add(subCategory.Id);
+            // Disparar el evento de pre-carga sin bloquear
+            catalogNavigation.PrefetchSubCategory(subCategory);
+        }
     }
 
     private async Task LoadCategoriesAsync()
@@ -79,72 +91,6 @@
         catch
         {
             categories = new List<Category>();
-        }
-    }
-
-    private async void NavigateToHome()
-    {
-        if (isNavigating) return;
-
-        isNavigating = true;
-        try
-        {
-            var uri = new Uri(navigationManager.Uri);
-            if (uri.AbsolutePath != "/")
-            {
-                navigationManager.NavigateTo("/");
-                await Task.Delay(50);
-            }
-            catalogNavigation.NavigateToCategories();
-        }
-        finally
-        {
-            await Task.Delay(300);
-            isNavigating = false;
-        }
-    }
-
-    private async void NavigateToCategory(Category category)
-    {
-        if (isNavigating) return;
-
-        isNavigating = true;
-        try
-        {
-            var uri = new Uri(navigationManager.Uri);
-            if (uri.AbsolutePath != "/")
-            {
-                navigationManager.NavigateTo("/");
-                await Task.Delay(50);
-            }
-            catalogNavigation.NavigateToCategory(category);
-        }
-        finally
-        {
-            await Task.Delay(300);
-            isNavigating = false;
-        }
-    }
-
-    private async void NavigateToSubCategory(SubCategory subCategory)
-    {
-        if (isNavigating) return;
-
-        isNavigating = true;
-        try
-        {
-            var uri = new Uri(navigationManager.Uri);
-            if (uri.AbsolutePath != "/")
-            {
-                navigationManager.NavigateTo("/");
-                await Task.Delay(50);
-            }
-            catalogNavigation.NavigateToSubCategory(subCategory);
-        }
-        finally
-        {
-            await Task.Delay(50);
-            isNavigating = false;
         }
     }
 }

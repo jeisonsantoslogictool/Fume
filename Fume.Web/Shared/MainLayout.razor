@@ -5,10 +5,10 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="2" Dense="true" Color="Color.Info">   
+    <MudAppBar Elevation="2" Dense="true" Color="Color.Info">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <div class="logo-section">
-            <img src="/Logo.png" alt="Fume Logo" @onclick="@(() => navigationManager.NavigateTo("/"))" style="border-radius: 45px; height:42px !important" />
+        <div class="logo-section" @onclick="GoToHome" style="cursor: pointer;">
+            <img src="/Logo.png" alt="Fume Logo" style="border-radius: 45px; height:42px !important" />
         </div>
       @*   <MudText Typo="Typo.h6" Class="ml-3">Fume Marketplace</MudText> *@
         <MudSpacer />
@@ -49,6 +49,7 @@
 @code {
     private bool _drawerOpen = true;
     private bool firstRender = true;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -57,8 +58,14 @@
             StateHasChanged();
         }
     }
+
     private void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
+    }
+
+    private void GoToHome()
+    {
+        navigationManager.NavigateTo("/", forceLoad: false);
     }
 }
