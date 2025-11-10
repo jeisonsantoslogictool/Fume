@@ -30,6 +30,8 @@ namespace fume.api.Data
 
         public DbSet<ProductSubCategory> ProductSubCategories { get; set; }
 
+        public DbSet<TemporalSale> TemporalSales { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

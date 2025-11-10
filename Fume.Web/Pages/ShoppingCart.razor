@@ -1,0 +1,643 @@
+@page "/shopping-cart"
+@inject Fume.Web.Services.CartService cartService
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+@using Fume.Web.Helpers
+@using MudBlazor
+@using fume.shared.Enttities
+@layout MainLayout
+
+<style>
+    .shopping-cart-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .cart-header {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    .cart-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .cart-header p {
+        margin: 5px 0 0 0;
+        opacity: 0.9;
+    }
+
+    .cart-content {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 30px;
+    }
+
+    .cart-items-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .cart-items-header {
+        padding: 20px 30px;
+        background: #f8f9fa;
+        border-bottom: 2px solid #e9ecef;
+        font-weight: 600;
+        color: #2c3e50;
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr 60px;
+        gap: 20px;
+    }
+
+    .cart-item {
+        padding: 30px;
+        border-bottom: 1px solid #e9ecef;
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr 60px;
+        gap: 20px;
+        align-items: center;
+        transition: background 0.2s;
+    }
+
+    .cart-item:hover {
+        background: #f8f9fa;
+    }
+
+    .cart-item:last-child {
+        border-bottom: none;
+    }
+
+    .item-details {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .item-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .item-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .item-info {
+        flex: 1;
+    }
+
+    .item-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+
+    .item-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .item-stock {
+        color: #27ae60;
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+
+    .item-stock.low {
+        color: #e67e22;
+    }
+
+    .item-stock.out {
+        color: #e74c3c;
+    }
+
+    .item-price {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 1.1rem;
+    }
+
+    .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .quantity-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #495057;
+    }
+
+    .quantity-btn:hover:not(:disabled) {
+        background: #2196F3;
+        color: white;
+        border-color: #2196F3;
+    }
+
+    .quantity-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .quantity-display {
+        min-width: 40px;
+        text-align: center;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .item-subtotal {
+        font-weight: 700;
+        color: #27ae60;
+        font-size: 1.2rem;
+    }
+
+    .remove-btn {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: #fee;
+        color: #dc3545;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .remove-btn:hover {
+        background: #dc3545;
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .cart-summary {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    .summary-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        color: #6c757d;
+    }
+
+    .summary-row.total {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #2c3e50;
+        padding-top: 20px;
+        margin-top: 15px;
+        border-top: 2px solid #e9ecef;
+    }
+
+    .summary-row.total .amount {
+        color: #27ae60;
+    }
+
+    .checkout-btn {
+        width: 100%;
+        padding: 16px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: all 0.3s;
+    }
+
+    .checkout-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+    }
+
+    .checkout-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .continue-shopping-btn {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #2196F3;
+        border-radius: 8px;
+        background: white;
+        color: #2196F3;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: all 0.3s;
+    }
+
+    .continue-shopping-btn:hover {
+        background: #2196F3;
+        color: white;
+    }
+
+    .empty-cart {
+        background: white;
+        border-radius: 12px;
+        padding: 80px 40px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .empty-cart-icon {
+        font-size: 5rem;
+        color: #dee2e6;
+        margin-bottom: 20px;
+    }
+
+    .empty-cart h2 {
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+
+    .empty-cart p {
+        color: #adb5bd;
+        margin-bottom: 30px;
+    }
+
+    .clear-cart-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 6px;
+        transition: all 0.2s;
+        margin-top: 15px;
+    }
+
+    .clear-cart-btn:hover {
+        background: #fee;
+    }
+
+    @@media (max-width: 968px) {
+        .cart-content {
+            grid-template-columns: 1fr;
+        }
+
+        .cart-summary {
+            position: static;
+        }
+
+        .cart-items-header {
+            display: none;
+        }
+
+        .cart-item {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .item-details {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .quantity-controls, .item-price, .item-subtotal {
+            justify-self: start;
+        }
+    }
+</style>
+
+<div class="shopping-cart-container">
+    <div class="cart-header">
+        <h1>🛒 Mi Carrito de Compras</h1>
+        <p>@(items?.Count ?? 0) producto(s) en tu carrito</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div style="display: grid; grid-template-columns: 1fr 400px; gap: 30px;">
+            <div class="cart-items-section">
+                @for (int i = 0; i < 3; i++)
+                {
+                    <div class="cart-item">
+                        <div class="item-details">
+                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100px" Height="100px" Animation="Animation.Wave" />
+                            <div style="flex: 1;">
+                                <MudSkeleton SkeletonType="SkeletonType.Text" Width="80%" Animation="Animation.Wave" />
+                                <MudSkeleton SkeletonType="SkeletonType.Text" Width="60%" Animation="Animation.Wave" Class="mt-2" />
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="cart-summary">
+                <MudSkeleton SkeletonType="SkeletonType.Text" Height="40px" Animation="Animation.Wave" />
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" Animation="Animation.Wave" Class="mt-4" />
+            </div>
+        </div>
+    }
+    else if (items == null || !items.Any())
+    {
+        <div class="empty-cart">
+            <div class="empty-cart-icon">
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingCartCheckout" Size="Size.Large" />
+            </div>
+            <h2>Tu carrito está vacío</h2>
+            <p>Parece que aún no has agregado ningún producto a tu carrito.</p>
+            <button class="checkout-btn" @onclick="ContinueShopping" style="max-width: 300px; margin: 0 auto;">
+                Explorar Productos
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="cart-content">
+            <div class="cart-items-section">
+                <div class="cart-items-header">
+                    <div>Producto</div>
+                    <div>Precio</div>
+                    <div>Cantidad</div>
+                    <div>Subtotal</div>
+                    <div></div>
+                </div>
+
+                @foreach (var item in items)
+                {
+                    <div class="cart-item">
+                        <div class="item-details">
+                            <div class="item-image">
+                                @if (item.Product?.ProductImages != null && item.Product.ProductImages.Any())
+                                {
+                                    var imageUrl = ImageUrlHelper.GetProductImageUrl(item.Product.ProductImages.First());
+                                    <img src="@imageUrl" alt="@item.Product.Name" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.ImageNotSupported" Color="Color.Default" />
+                                }
+                            </div>
+                            <div class="item-info">
+                                <div class="item-name">@item.Product?.Name</div>
+                                <div class="item-description">@item.Product?.Description</div>
+                                @if (item.Product != null)
+                                {
+                                    <div class="item-stock @(item.Product.Stock < 5 ? "low" : item.Product.Stock == 0 ? "out" : "")">
+                                        @if (item.Product.Stock == 0)
+                                        {
+                                            <span>⚠️ Sin stock</span>
+                                        }
+                                        else if (item.Product.Stock < 5)
+                                        {
+                                            <span>⚠️ Solo @item.Product.Stock disponibles</span>
+                                        }
+                                        else
+                                        {
+                                            <span>✓ Disponible (@item.Product.Stock en stock)</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="item-price">
+                            @FormatHelper.FormatPrice(item.Product?.Price ?? 0)
+                        </div>
+
+                        <div class="quantity-controls">
+                            <button class="quantity-btn" @onclick="() => DecreaseQuantity(item)" disabled="@(item.Quantity <= 1 || isUpdating)">
+                                <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
+                            </button>
+                            <span class="quantity-display">@item.Quantity</span>
+                            <button class="quantity-btn" @onclick="() => IncreaseQuantity(item)" disabled="@(item.Quantity >= item.Product?.Stock || isUpdating)">
+                                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                            </button>
+                        </div>
+
+                        <div class="item-subtotal">
+                            @FormatHelper.FormatPrice(item.Value)
+                        </div>
+
+                        <button class="remove-btn" @onclick="() => ConfirmRemoveItem(item)" disabled="@isUpdating" title="Eliminar producto">
+                            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
+                        </button>
+                    </div>
+                }
+            </div>
+
+            <div class="cart-summary">
+                <div class="summary-title">Resumen del Pedido</div>
+
+                <div class="summary-row">
+                    <span>Subtotal (@items.Count productos):</span>
+                    <span>@FormatHelper.FormatPrice(Subtotal)</span>
+                </div>
+
+                <div class="summary-row">
+                    <span>Envío:</span>
+                    <span>@FormatHelper.FormatPrice(ShippingCost)</span>
+                </div>
+
+                @if (Tax > 0)
+                {
+                    <div class="summary-row">
+                        <span>IVA (19%):</span>
+                        <span>@FormatHelper.FormatPrice(Tax)</span>
+                    </div>
+                }
+
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span class="amount">@FormatHelper.FormatPrice(Total)</span>
+                </div>
+
+                <button class="checkout-btn" @onclick="ProceedToCheckout" disabled="@isUpdating">
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" /> Proceder al Pago
+                </button>
+
+                <button class="continue-shopping-btn" @onclick="ContinueShopping">
+                    Continuar Comprando
+                </button>
+
+                <button class="clear-cart-btn" @onclick="ConfirmClearCart" disabled="@isUpdating">
+                    <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Size="Size.Small" /> Vaciar Carrito
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TemporalSale>? items;
+    private bool isLoading = true;
+    private bool isUpdating = false;
+
+    private decimal Subtotal => items?.Sum(i => i.Value) ?? 0;
+    private decimal ShippingCost => Subtotal > 0 ? (Subtotal >= 100000 ? 0 : 5000) : 0; // Envío gratis sobre $100k
+    private decimal Tax => Subtotal * 0.19m; // IVA 19%
+    private decimal Total => Subtotal + ShippingCost + Tax;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCartAsync();
+    }
+
+    private async Task LoadCartAsync()
+    {
+        isLoading = true;
+        items = await cartService.GetCartItemsAsync();
+        isLoading = false;
+    }
+
+    private async Task IncreaseQuantity(TemporalSale item)
+    {
+        if (item.Product == null || item.Quantity >= item.Product.Stock) return;
+
+        isUpdating = true;
+        var newQuantity = item.Quantity + 1;
+        var success = await cartService.UpdateQuantityAsync(item.Id, newQuantity);
+
+        if (success)
+        {
+            item.Quantity = newQuantity;
+        }
+
+        isUpdating = false;
+    }
+
+    private async Task DecreaseQuantity(TemporalSale item)
+    {
+        if (item.Quantity <= 1) return;
+
+        isUpdating = true;
+        var newQuantity = item.Quantity - 1;
+        var success = await cartService.UpdateQuantityAsync(item.Id, newQuantity);
+
+        if (success)
+        {
+            item.Quantity = newQuantity;
+        }
+
+        isUpdating = false;
+    }
+
+    private async Task ConfirmRemoveItem(TemporalSale item)
+    {
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+        {
+            Title = "¿Eliminar producto?",
+            Text = $"¿Estás seguro de eliminar '{item.Product?.Name}' del carrito?",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí, eliminar",
+            CancelButtonText = "Cancelar",
+            ConfirmButtonColor = "#dc3545"
+        });
+
+        if (result.IsConfirmed)
+        {
+            await RemoveItem(item);
+        }
+    }
+
+    private async Task RemoveItem(TemporalSale item)
+    {
+        isUpdating = true;
+        var success = await cartService.RemoveFromCartAsync(item.Id);
+
+        if (success)
+        {
+            await LoadCartAsync();
+        }
+
+        isUpdating = false;
+    }
+
+    private async Task ConfirmClearCart()
+    {
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+        {
+            Title = "¿Vaciar carrito?",
+            Text = "Se eliminarán todos los productos de tu carrito. Esta acción no se puede deshacer.",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí, vaciar carrito",
+            CancelButtonText = "Cancelar",
+            ConfirmButtonColor = "#dc3545"
+        });
+
+        if (result.IsConfirmed)
+        {
+            await ClearCart();
+        }
+    }
+
+    private async Task ClearCart()
+    {
+        isUpdating = true;
+        var success = await cartService.ClearCartAsync();
+
+        if (success)
+        {
+            await LoadCartAsync();
+        }
+
+        isUpdating = false;
+    }
+
+    private void ProceedToCheckout()
+    {
+        navigationManager.NavigateTo("/checkout");
+    }
+
+    private void ContinueShopping()
+    {
+        navigationManager.NavigateTo("/");
+    }
+}

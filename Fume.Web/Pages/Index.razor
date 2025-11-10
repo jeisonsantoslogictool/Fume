@@ -3,6 +3,7 @@
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
 @inject Fume.Web.Services.CatalogNavigationService catalogNavigation
+@inject Fume.Web.Services.CartService cartService
 @using Microsoft.AspNetCore.Components.Web
 @inherits LayoutComponentBase
 @layout MainLayout
@@ -406,7 +407,7 @@
     }
 </style>
 
-<!-- Header Section -->
+
 <div class="header-section">
     <div class="header-container">
         <div class="search-section">
@@ -425,25 +426,21 @@
         <div class="cart-section">
             <AuthorizeView>
                 <Authorized>
-                    @if (counter > 0)
-                    { 
-                        <MudBadge Content="@counter" Overlap="true" Class="mx-6 my-4">
+                    <div style="cursor: pointer;" @onclick="ToggleMiniCart">
+                        <MudBadge Content="@cartService.ItemCount" Overlap="true" Class="mx-6 my-4">
                             <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Color="Color.Info" />
                         </MudBadge>
-                    }
-                    else
-                    {
-                        <MudBadge Content="@counter" Overlap="true" Class="mx-6 my-4">
-                            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Color="Color.Info" />
-                        </MudBadge>
-                    }
+                    </div>
                 </Authorized>
             </AuthorizeView>
         </div>
     </div>
 </div>
 
-     <!-- Banner Section -->
+
+<MiniCart IsOpen="@isMiniCartOpen" OnClose="@(() => isMiniCartOpen = false)" />
+
+ 
 <div  style="height: 71px;background: #ffffff;padding: 15px 0;margin-bottom: 30px;border-radius: 8px;position: sticky;top: 48px;z-index: 999;">
 
   
@@ -692,7 +689,6 @@ else
 
     private ViewType currentView = ViewType.Categories;
     private bool loading = true;
-    private int counter = 0;
     private bool isAuthenticated;
     private bool firstRender = true;
 
@@ -709,6 +705,9 @@ else
     // Para prevenir clics repetitivos
     private bool isNavigating = false;
 
+    // Para el mini-carrito
+    private bool isMiniCartOpen = false;
+
     [Parameter]
     [SupplyParameterFromQuery]
     public string Filter { get; set; } = "";
@@ -722,6 +721,14 @@ else
         catalogNavigation.OnCategoriesRequested += HandleCategoriesRequested;
         catalogNavigation.OnCategorySelected += HandleCategorySelected;
         catalogNavigation.OnSubCategorySelected += HandleSubCategorySelected;
+
+        // Suscribirse a los eventos del carrito
+        cartService.OnChange += OnCartChanged;
+    }
+
+    private void OnCartChanged()
+    {
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -730,7 +737,13 @@ else
         {
             this.firstRender = false;
             await CheckIsAuthenticatedAsync();
-            await LoadCounterAsync();
+
+            // Inicializar el carrito si el usuario está autenticado
+            if (isAuthenticated)
+            {
+                await cartService.InitializeAsync();
+            }
+
             await LoadCategoriesAsync();
             StateHasChanged();
         }
@@ -741,7 +754,12 @@ else
         if (!firstRender)
         {
             await CheckIsAuthenticatedAsync();
-            await LoadCounterAsync();
+
+            // Inicializar el carrito si el usuario está autenticado
+            if (isAuthenticated)
+            {
+                await cartService.InitializeAsync();
+            }
         }
     }
 
@@ -751,6 +769,7 @@ else
         catalogNavigation.OnCategoriesRequested -= HandleCategoriesRequested;
         catalogNavigation.OnCategorySelected -= HandleCategorySelected;
         catalogNavigation.OnSubCategorySelected -= HandleSubCategorySelected;
+        cartService.OnChange -= OnCartChanged;
     }
 
     private void HandleCategoriesRequested()
@@ -814,21 +833,6 @@ else
     {
         var authenticationState = await authenticationStateTask;
         isAuthenticated = authenticationState.User.Identity!.IsAuthenticated;
-    }
-
-    private async Task LoadCounterAsync()
-    {
-        if (!isAuthenticated)
-        {
-            return;
-        }
-
-        var responseHttp = await repository.Get<int>("/api/temporalSales/count");
-        if (responseHttp.Error)
-        {
-            return;
-        }
-        counter = responseHttp.Response;
     }
 
     private async Task LoadCategoriesAsync()
@@ -986,29 +990,24 @@ else
         if (!isAuthenticated)
         {
             navigationManager.NavigateTo("/Login");
-            var toast1 = sweetAlertService.Mixin(new SweetAlertOptions
+            var toast = sweetAlertService.Mixin(new SweetAlertOptions
             {
                 Toast = true,
                 Position = SweetAlertPosition.BottomEnd,
                 ShowConfirmButton = false,
-                Timer = 5000
+                Timer = 5000,
+                TimerProgressBar = true
             });
-            await toast1.FireAsync(icon: SweetAlertIcon.Error, message: "Debes haber iniciado sesión para poder agregar productos al carro de compras.");
+            await toast.FireAsync(icon: SweetAlertIcon.Error, message: "Debes haber iniciado sesión para poder agregar productos al carro de compras.");
             return;
         }
 
-        await LoadCounterAsync();
+        // Usar el CartService para agregar al carrito
+        await cartService.AddToCartAsync(productId, 1);
+    }
 
-        var toast2 = sweetAlertService.Mixin(new SweetAlertOptions
-        {
-            Toast = true,
-            Position = SweetAlertPosition.BottomEnd,
-            ShowConfirmButton = false,
-            Timer = 5000,
-            TimerProgressBar = true
-        });
-        counter++;
-        await toast2.FireAsync(icon: SweetAlertIcon.Success, message: "Producto agregado al carro de compras.");
-        StateHasChanged();
+    private void ToggleMiniCart()
+    {
+        isMiniCartOpen = !isMiniCartOpen;
     }
 }

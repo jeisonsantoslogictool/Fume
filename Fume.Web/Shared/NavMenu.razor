@@ -11,7 +11,6 @@
 
     <MudDivider Class="my-2" />
 
-    <!-- Categorías y Subcategorías para todos los usuarios -->
     @if (categories != null && categories.Any())
     {
         @foreach (var category in categories)
@@ -94,7 +93,7 @@
             if (uri.AbsolutePath != "/")
             {
                 navigationManager.NavigateTo("/");
-                await Task.Delay(100);
+                await Task.Delay(50);
             }
             catalogNavigation.NavigateToCategories();
         }
@@ -116,7 +115,7 @@
             if (uri.AbsolutePath != "/")
             {
                 navigationManager.NavigateTo("/");
-                await Task.Delay(100);
+                await Task.Delay(50);
             }
             catalogNavigation.NavigateToCategory(category);
         }
@@ -138,13 +137,13 @@
             if (uri.AbsolutePath != "/")
             {
                 navigationManager.NavigateTo("/");
-                await Task.Delay(100);
+                await Task.Delay(50);
             }
             catalogNavigation.NavigateToSubCategory(subCategory);
         }
         finally
         {
-            await Task.Delay(300);
+            await Task.Delay(50);
             isNavigating = false;
         }
     }

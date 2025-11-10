@@ -1,76 +1,410 @@
-﻿@page "/Login"
+@page "/Login"
 @inject IRepository repository
 @inject SweetAlertService sweetAlertService
 @inject NavigationManager navigationManager
 @inject IloginService loginService
-@* Importa Bourbon *@
+@using MudBlazor
 
+<style>
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #1976d2 0%, rgb(255, 255, 255) 100%);
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
 
-<div class="row">
-    <div class="col-md-4  offset-md-4">
+    .login-container::before {
+        content: '';
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        animation: moveBackground 20s linear infinite;
+    }
+
+    @@keyframes moveBackground {
+        0% {
+            transform: translate(0, 0);
+        }
+        100% {
+            transform: translate(50px, 50px);
+        }
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 450px;
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .login-header {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        padding: 40px 30px;
+        text-align: center;
+        color: white;
+    }
+
+    .login-logo {
+        width: 80px;
+        height: 80px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .login-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0 0 10px 0;
+    }
+
+    .login-subtitle {
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+
+    .login-body {
+        padding: 40px 30px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .form-input-wrapper {
+        position: relative;
+    }
+
+    .form-input-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        pointer-events: none;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 14px 15px 14px 45px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #2196F3;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    }
+
+    .form-input:focus + .form-input-icon {
+        color: #2196F3;
+    }
+
+    .validation-message {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 5px;
+        display: block;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 5px;
+        transition: color 0.2s;
+    }
+
+    .password-toggle:hover {
+        color: #2196F3;
+    }
+
+    .login-btn {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        margin-top: 10px;
+    }
+
+    .login-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(33, 150, 243, 0.5);
+    }
+
+    .login-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .login-btn:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    .login-footer {
+        padding: 25px 30px;
+        background: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        text-align: center;
+    }
+
+    .footer-link {
+        color: #2196F3;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+        display: block;
+        margin: 8px 0;
+    }
+
+    .footer-link:hover {
+        color: #1976D2;
+        text-decoration: underline;
+    }
+
+    .divider {
+        display: flex;
+        align-items: center;
+        margin: 25px 0;
+        color: #6c757d;
+    }
+
+    .divider::before,
+    .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e9ecef;
+    }
+
+    .divider span {
+        padding: 0 15px;
+        font-size: 0.9rem;
+    }
+
+    .register-prompt {
+        margin-top: 20px;
+        color: #6c757d;
+    }
+
+    .register-link {
+        color: #2196F3;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .register-link:hover {
+        color: #1976D2;
+        text-decoration: underline;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.8s linear infinite;
+        margin-right: 10px;
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .login-card {
+            border-radius: 15px;
+        }
+
+        .login-header {
+            padding: 30px 20px;
+        }
+
+        .login-body {
+            padding: 30px 20px;
+        }
+
+        .login-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-logo">
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Color="Color.Primary" Size="Size.Large" />
+            </div>
+            <h1 class="login-title">Bienvenido</h1>
+            <p class="login-subtitle">Inicia sesión en tu cuenta</p>
+        </div>
 
         <EditForm Model="loginDTO" OnValidSubmit="LoginAsync">
             <DataAnnotationsValidator />
 
-            <div class="card bg-light">
-                <div class="card-header justify-content-center">
-                    <span>
-                        <i class="oi oi-account-login" /> Iniciar Sesión
-                        <button class="btn btn-sm btn-primary float-end" type="submit"><i class="oi oi-check" /> Iniciar Sesión</button>
-                    </span>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label>Email:</label>
-                        <div>
-                            <InputText class="form-control" @bind-Value="@loginDTO.Email" />
-                            <ValidationMessage For="@(() => loginDTO.Email)" />
+            <div class="login-body">
+                <div class="form-group">
+                    <label class="form-label">Correo Electrónico</label>
+                    <div class="form-input-wrapper">
+                        <InputText class="form-input"
+                                   @bind-Value="loginDTO.Email"
+                                   placeholder="tu@email.com"
+                                   disabled="@isLoading" />
+                        <div class="form-input-icon">
+                            <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label>Contraseña:</label>
-                        <div>
-                            <InputText type="password" class="form-control" @bind-Value="@loginDTO.Password" />
-                            <ValidationMessage For="@(() => loginDTO.Password)" />
-                        </div>
-                    </div>
+                    <ValidationMessage For="@(() => loginDTO.Email)" class="validation-message" />
                 </div>
-                <div class="card-footer">
-                    <a class="bbtn btn-link" href="/ResendToken">Reenviar correro de activación de cuenta</a>
-                    <p><a class="bbtn btn-link" href="/RecoverPassword">¿Has olvidado tu contraseña?</a></p>
+
+                <div class="form-group">
+                    <label class="form-label">Contraseña</label>
+                    <div class="form-input-wrapper">
+                        <InputText type="@(showPassword ? "text" : "password")"
+                                   class="form-input"
+                                   @bind-Value="loginDTO.Password"
+                                   placeholder="••••••••"
+                                   disabled="@isLoading" />
+                        <div class="form-input-icon">
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" />
+                        </div>
+                        <button type="button"
+                                class="password-toggle"
+                                @onclick="TogglePasswordVisibility"
+                                disabled="@isLoading">
+                            <MudIcon Icon="@(showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                     Size="Size.Small" />
+                        </button>
+                    </div>
+                    <ValidationMessage For="@(() => loginDTO.Password)" class="validation-message" />
+                </div>
+
+                <button type="submit" class="login-btn" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="loading-spinner"></span>
+                        <span>Iniciando sesión...</span>
+                    }
+                    else
+                    {
+                        <span>Iniciar Sesión</span>
+                    }
+                </button>
+
+                <div class="register-prompt">
+                    ¿No tienes una cuenta? <a href="/register" class="register-link">Regístrate aquí</a>
                 </div>
             </div>
         </EditForm>
+
+        <div class="login-footer">
+            <a href="/RecoverPassword" class="footer-link">
+                <MudIcon Icon="@Icons.Material.Filled.Help" Size="Size.Small" /> ¿Olvidaste tu contraseña?
+            </a>
+            <a href="/ResendToken" class="footer-link">
+                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" /> Reenviar correo de activación
+            </a>
+        </div>
     </div>
 </div>
-<script>
-    
 
-</script>
-
-<style>
-   .card {
-        margin-top: 50px;
-        box-shadow: 2px 2px 8px 4px #d3d3d3d1;
-        border-radius: 15px;
-        font-family: sans-serif;
-    }
-</style>
 @code {
     private LoginDTO loginDTO = new();
+    private bool isLoading = false;
+    private bool showPassword = false;
+
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
 
     private async Task LoginAsync()
     {
-        var responseHttp = await repository.post<LoginDTO, TokenDTO>("/api/accounts/Login", loginDTO);
-        if (responseHttp.Error)
-        {
-            var message = await responseHttp.GetErrorMessageAsync();
-            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-            return;
-        }
+        isLoading = true;
 
-        await loginService.LoginAsync(responseHttp.Response!.Token);
-        navigationManager.NavigateTo("/");
+        try
+        {
+            var responseHttp = await repository.post<LoginDTO, TokenDTO>("/api/accounts/Login", loginDTO);
+
+            if (responseHttp.Error)
+            {
+                var message = await responseHttp.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Error de Autenticación",
+                    Text = message,
+                    Icon = SweetAlertIcon.Error,
+                    ConfirmButtonText = "Intentar nuevamente",
+                    ConfirmButtonColor = "#2196F3"
+                });
+                return;
+            }
+
+            await loginService.LoginAsync(responseHttp.Response!.Token);
+
+          
+            navigationManager.NavigateTo("/");
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 }
-

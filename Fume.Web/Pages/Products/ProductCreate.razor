@@ -97,12 +97,6 @@ else
         productForm!.FormPostedSuccessfully = true;
         navigationManager.NavigateTo($"/products");
        
-        await sweetAlertService.FireAsync(new SweetAlertOptions
-            {
-                Title = "Confirmación",
-                Text = "Guardado Con Éxito",
-                Icon = SweetAlertIcon.Success,
-                ShowCancelButton = true,
-            });
+     
     }
 }

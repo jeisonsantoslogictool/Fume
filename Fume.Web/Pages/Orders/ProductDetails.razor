@@ -2,6 +2,7 @@
 @inject IRepository repository
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
+@inject Fume.Web.Services.CartService cartService
 @using Fume.Web.Helpers
 @using MudBlazor
 @layout MainLayout
@@ -414,18 +415,14 @@
 
         try
         {
-            // TODO: Implement actual add to cart API call
-            await Task.Delay(500); // Simular llamada API
+            // Usar el CartService para agregar al carrito
+            var success = await cartService.AddToCartAsync(ProductId, Quantity);
 
-            var toast = sweetAlertService.Mixin(new SweetAlertOptions
+            if (success)
             {
-                Toast = true,
-                Position = SweetAlertPosition.BottomEnd,
-                ShowConfirmButton = false,
-                Timer = 3000,
-                TimerProgressBar = true
-            });
-            await toast.FireAsync(icon: SweetAlertIcon.Success, message: $"{Quantity} unidad(es) agregada(s) al carrito.");
+                // Resetear la cantidad a 1 después de agregar
+                Quantity = 1;
+            }
         }
         catch (Exception ex)
         {

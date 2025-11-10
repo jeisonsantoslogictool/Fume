@@ -24,6 +24,7 @@ builder.Services.AddScoped<AutenticacionPro>();
 builder.Services.AddScoped<AuthenticationStateProvider, AutenticacionPro>(x => x.GetRequiredService<AutenticacionPro>());
 builder.Services.AddScoped<IloginService, AutenticacionPro>(x => x.GetRequiredService<AutenticacionPro>());
 builder.Services.AddSingleton<CatalogNavigationService>();
+builder.Services.AddScoped<CartService>();
 
 
 
