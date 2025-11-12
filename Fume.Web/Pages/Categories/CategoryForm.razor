@@ -1,4 +1,101 @@
 ﻿@inject SweetAlertService sweetAlertService
+@using MudBlazor
+
+<style>
+    .icon-selector-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+        margin-top: 15px;
+    }
+
+    .icon-selector-item {
+        cursor: pointer;
+        padding: 16px;
+        border-radius: 8px;
+        border: 3px solid #e0e0e0;
+        background-color: #fafafa;
+        transition: all 0.3s ease;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 110px;
+    }
+
+    .icon-selector-item:hover {
+        border-color: #667eea;
+        background-color: rgba(102, 126, 234, 0.08);
+    }
+
+    .icon-selector-item.selected {
+        border-color: #667eea;
+        background-color: rgba(102, 126, 234, 0.15);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .icon-selector-item-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #555;
+        word-break: break-word;
+    }
+
+    .icon-selector-item.selected .icon-selector-item-label {
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    .nav-preview {
+        margin-top: 25px;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        border: 2px solid #e0e0e0;
+    }
+
+    .nav-preview-title {
+        font-weight: 600;
+        color: #667eea;
+        margin-bottom: 12px;
+    }
+
+    /* Estilos iguales al NavMenu */
+    :deep .preview-mud-nav-group {
+        padding: 4px 0 !important;
+    }
+
+    :deep .preview-mud-nav-group-header {
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    :deep .preview-mud-nav-group-header:hover {
+        background-color: rgba(102, 126, 234, 0.12) !important;
+        transform: translateX(4px);
+    }
+
+    :deep .preview-mud-nav-group-header-text {
+        font-weight: 600 !important;
+        font-size: 0.95em !important;
+        letter-spacing: 0.3px !important;
+    }
+
+    :deep .preview-mud-nav-group-item-header-icon {
+        font-size: 1.2em !important;
+    }
+
+    :deep .preview-mud-nav-link {
+        border-radius: 6px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    :deep .preview-mud-nav-link:hover {
+        background-color: rgba(102, 126, 234, 0.15) !important;
+    }
+</style>
 
 <NavigationLock OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
 
@@ -12,6 +109,36 @@
             <ValidationMessage For="@(() => Category.Name)" />
         </div>
     </div>
+
+    <div class="mb-3">
+        <label>Icono (selecciona exactamente como se verá en el menú):</label>
+        <div class="icon-selector-grid">
+            @foreach (var icon in GetIconList())
+            {
+                <div class="icon-selector-item @(Category.Icon == icon.Key ? "selected" : "")"
+                     @onclick="() => { Category.Icon = icon.Key; StateHasChanged(); }">
+                    <div class="icon-selector-item-label">@icon.Value</div>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Category.Icon))
+        {
+            <div class="nav-preview">
+                <div class="nav-preview-title">Vista previa - Así se verá en el menú:</div>
+                <div style="border: 1px solid #ddd; border-radius: 6px; padding: 8px; background-color: white;">
+                    <MudNavMenu>
+                        <MudNavGroup Class="preview-mud-nav-group" Title="@Category.Name" Icon="@GetCategoryIcon(Category.Icon)" IconColor="Color.Primary">
+                            <MudNavLink Class="preview-mud-nav-link" Href="#" Icon="@Icons.Material.Filled.ChevronRight" IconColor="Color.Info">
+                                Ejemplo de subcategoría
+                            </MudNavLink>
+                        </MudNavGroup>
+                    </MudNavMenu>
+                </div>
+            </div>
+        }
+    </div>
+
     <button class="btn btn-primary" type="submit">Guardar Cambios</button>
     <button class="btn btn-success" @onclick="ReturnAction">Regresar</button>
 </EditForm>
@@ -37,6 +164,121 @@
     protected override void OnInitialized()
     {
         editContext = new(Category);
+    }
+
+    private List<KeyValuePair<string, string>> GetIconList()
+    {
+        return new List<KeyValuePair<string, string>>
+        {
+            // Computadoras
+            new("Desktop", "PC"),
+            new("Laptop", "Laptop"),
+            new("Tablet", "Tablet"),
+            new("Smartphone", "Teléfono"),
+
+            // Componentes
+            new("Memory", "Memoria"),
+            new("Storage", "Almacenamiento"),
+            new("Cpu", "Procesador"),
+            new("Gpu", "Gráficos"),
+
+            // Periféricos
+            new("Mouse", "Ratón"),
+            new("Keyboard", "Teclado"),
+            new("Monitor", "Monitor"),
+            new("Headphones", "Audífonos"),
+            new("Speaker", "Parlante"),
+            new("Camera", "Cámara"),
+            new("Printer", "Impresora"),
+
+            // Red y Conectividad
+            new("Router", "Router"),
+            new("Wifi", "WiFi"),
+            new("Cable", "Cables"),
+            new("NetworkCheck", "Red"),
+            new("SecurityCamera", "Cámara IP"),
+
+            // Oficina
+            new("Print", "Impresión"),
+            new("Description", "Documentos"),
+            new("Chair", "Muebles"),
+            new("Lightbulb", "Iluminación"),
+
+            // Software y Servicios
+            new("Code", "Software"),
+            new("Cloud", "Nube"),
+            new("VpnLock", "Seguridad"),
+            new("Extension", "Extensiones"),
+
+            // Accesorios
+            new("Backpack", "Mochilas"),
+            new("Cases", "Fundas"),
+            new("DisplaySettings", "Soportes"),
+            new("Settings", "Accesorios")
+        };
+    }
+
+    private string GetCategoryIcon(string? iconName)
+    {
+        if (string.IsNullOrEmpty(iconName))
+        {
+            return Icons.Material.Filled.Category;
+        }
+
+        // Mapeo de iconos de Material Design - Categorías de Tecnología
+        return iconName switch
+        {
+            // Computadoras
+            "Desktop" => Icons.Material.Filled.DesktopMac,
+            "Laptop" => Icons.Material.Filled.Laptop,
+            "Tablet" => Icons.Material.Filled.TabletMac,
+            "Smartphone" => Icons.Material.Filled.Smartphone,
+
+            // Componentes
+            "Memory" => Icons.Material.Filled.Memory,
+            "Storage" => Icons.Material.Filled.Storage,
+            "Cpu" => Icons.Material.Filled.Memory,
+            "Gpu" => Icons.Material.Filled.ViewWeek,
+
+            // Periféricos
+            "Mouse" => Icons.Material.Filled.TouchApp,
+            "Keyboard" => Icons.Material.Filled.Keyboard,
+            "Monitor" => Icons.Material.Filled.Monitor,
+            "Headphones" => Icons.Material.Filled.Headphones,
+            "Speaker" => Icons.Material.Filled.Speaker,
+            "Camera" => Icons.Material.Filled.Camera,
+            "Printer" => Icons.Material.Filled.Print,
+
+            // Red y Conectividad
+            "Router" => Icons.Material.Filled.Router,
+            "Wifi" => Icons.Material.Filled.Wifi,
+            "Cable" => Icons.Material.Filled.Cable,
+            "NetworkCheck" => Icons.Material.Filled.CloudQueue,
+            "SecurityCamera" => Icons.Material.Filled.Videocam,
+
+            // Oficina
+            "Print" => Icons.Material.Filled.Print,
+            "Description" => Icons.Material.Filled.Description,
+            "Chair" => Icons.Material.Filled.EventSeat,
+            "Lightbulb" => Icons.Material.Filled.Lightbulb,
+
+            // Software y Servicios
+            "Code" => Icons.Material.Filled.Code,
+            "Cloud" => Icons.Material.Filled.Cloud,
+            "VpnLock" => Icons.Material.Filled.VpnLock,
+            "Extension" => Icons.Material.Filled.Extension,
+
+            // Accesorios
+            "Backpack" => Icons.Material.Filled.Backpack,
+            "Cases" => Icons.Material.Filled.Cases,
+            "DisplaySettings" => Icons.Material.Filled.DisplaySettings,
+            "Settings" => Icons.Material.Filled.Settings,
+
+            // Legacy (para compatibilidad)
+            "ShoppingCart" => Icons.Material.Filled.ShoppingCart,
+            "Category" => Icons.Material.Filled.Category,
+            _ => Icons.Material.Filled.Category
+        };
     }
 
     private async Task OnBeforeInternalNavigation(LocationChangingContext context)

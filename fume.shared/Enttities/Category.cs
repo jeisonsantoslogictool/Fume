@@ -36,6 +36,10 @@ namespace fume.shared.Enttities
         [Display(Name = "URL de Imagen")]
         public string? ImageUrl { get; set; }
 
+        [Display(Name = "Icono")]
+        [MaxLength(100, ErrorMessage = "El campo {0} debe tener maximo {1} caracteres.")]
+        public string? Icon { get; set; }
+
         // Propiedad calculada para saber si tiene imagen (sin traer los bytes)
         [System.ComponentModel.DataAnnotations.Schema.NotMapped]
         public bool HasImage { get; set; }

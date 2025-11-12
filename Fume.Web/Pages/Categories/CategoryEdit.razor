@@ -179,6 +179,7 @@ else
         {
             Id = category.Id,
             Name = category.Name,
+            Icon = category.Icon,
             ImageString = category.Image != null && category.Image.Length > 0
                 ? Convert.ToBase64String(category.Image)
                 : null
@@ -190,6 +191,8 @@ else
             imageUrl = Convert.ToBase64String(category.Image);
             fileName = "Imagen actual";
         }
+
+        StateHasChanged();
     }
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)

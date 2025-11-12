@@ -13,5 +13,9 @@ namespace fume.shared.DTOs
 
         [Display(Name = "Imagen")]
         public string? ImageString { get; set; }
+
+        [Display(Name = "Icono")]
+        [MaxLength(100, ErrorMessage = "El campo {0} debe tener maximo {1} caracteres.")]
+        public string? Icon { get; set; }
     }
 }

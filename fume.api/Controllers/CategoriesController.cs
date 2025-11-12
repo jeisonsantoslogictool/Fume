@@ -45,6 +45,7 @@ namespace fume.api.Controllers
                     {
                         x.Id,
                         x.Name,
+                        x.Icon,
                         x.ImageUrl,
                         ImageLength = x.Image != null ? x.Image.Length : 0, // Solo traer la longitud
                         SubCategoriesNumber = x.SubCategories != null ? x.SubCategories.Count : 0,
@@ -57,6 +58,7 @@ namespace fume.api.Controllers
                 {
                     Id = x.Id,
                     Name = x.Name,
+                    Icon = x.Icon,
                     ImageUrl = x.ImageUrl,
                     Image = null,
                     HasImage = x.ImageLength > 0,
@@ -98,15 +100,15 @@ namespace fume.api.Controllers
                 // Limpiar las imágenes para no enviar los bytes
                 foreach (var category in categories)
                 {
-                    category.Image = null;
-                    category.HasImage = false; // No necesitamos las imágenes de categorías en el menu
+                    category.HasImage = category.Image != null && category.Image.Length > 0;
+                    category.Image = null; // Limpiar bytes de imagen
 
                     if (category.SubCategories != null)
                     {
                         foreach (var subCategory in category.SubCategories)
                         {
+                            subCategory.HasImage = subCategory.Image != null && subCategory.Image.Length > 0;
                             subCategory.Image = null;
-                            subCategory.HasImage = false;
                             subCategory.ProductSubCategories = null; // No necesitamos productos en el menu
                         }
                     }
@@ -238,6 +240,7 @@ namespace fume.api.Controllers
 
                 // Solo actualizar los campos permitidos
                 existingCategory.Name = categoryDTO.Name;
+                existingCategory.Icon = categoryDTO.Icon;
 
                 // Si hay una imagen en el DTO, convertirla de Base64
                 if (!string.IsNullOrEmpty(categoryDTO.ImageString))

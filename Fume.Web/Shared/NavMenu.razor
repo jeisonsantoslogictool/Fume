@@ -2,38 +2,102 @@
 @inject NavigationManager navigationManager
 @inject Fume.Web.Services.CatalogNavigationService catalogNavigation
 
+<style>
+    :deep .mud-nav-group {
+        padding: 4px 0 !important;
+    }
+
+    :deep .mud-nav-group-header {
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    :deep .mud-nav-group-header:hover {
+        background-color: rgba(102, 126, 234, 0.12) !important;
+        transform: translateX(4px);
+    }
+
+    :deep .mud-nav-group-header-text {
+        font-weight: 600 !important;
+        font-size: 0.95em !important;
+        letter-spacing: 0.3px !important;
+    }
+
+    :deep .mud-nav-group-item-header-icon {
+        font-size: 1.2em !important;
+    }
+
+    .nav-link-subcategory {
+        padding-left: 20px !important;
+        font-size: 0.9em !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    :deep .nav-link-subcategory {
+        padding-left: 20px !important;
+    }
+
+    :deep .nav-link-subcategory .mud-nav-link {
+        padding: 6px 12px !important;
+        border-radius: 6px !important;
+        margin: 2px 8px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    :deep .nav-link-subcategory:hover {
+        background-color: rgba(102, 126, 234, 0.15) !important;
+    }
+
+    :deep .nav-link-subcategory:hover .mud-nav-link {
+        padding-left: 18px !important;
+        background-color: rgba(102, 126, 234, 0.2) !important;
+    }
+
+    :deep .mud-nav-link {
+        border-radius: 6px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    :deep .mud-nav-link:hover {
+        background-color: rgba(102, 126, 234, 0.15) !important;
+    }
+</style>
+
 <MudNavMenu>
 
-    <MudNavLink Href="/" Icon="@Icons.Material.Filled.ShoppingCart" IconColor="Color.Info" Style="cursor: pointer;">
+    <MudNavLink Href="/" Icon="@Icons.Material.Filled.ShoppingCart" IconColor="Color.Info" Style="cursor: pointer; font-weight: 600; font-size: 1.05em;">
         ITplus Dominicana
     </MudNavLink>
- 
 
-    <MudDivider Class="my-2" />
+
+    <MudDivider Class="my-3" />
 
     @if (categories != null && categories.Any())
     {
         @foreach (var category in categories)
         {
-            <MudNavGroup Title="@category.Name" Icon="@Icons.Material.Filled.Category" IconColor="Color.Primary">
+            <MudNavGroup Class="category-nav-group" Title="@category.Name" Icon="@GetCategoryIcon(category.Icon)" IconColor="Color.Primary">
                 @if (category.SubCategories != null && category.SubCategories.Any())
                 {
                     @foreach (var subCategory in category.SubCategories)
                     {
-                        <MudNavLink Href="@($"/subcategory/{subCategory.Id}")"
+                        <MudNavLink Class="nav-link-subcategory"
+                                    Href="@($"/subcategory/{subCategory.Id}")"
                                     @onmouseenter="@(() => PrefetchSubCategory(subCategory))"
-                                    Icon="@Icons.Material.Filled.Label"
-                                    IconColor="Color.Secondary">
+                                    Icon="@Icons.Material.Filled.ChevronRight"
+                                    IconColor="Color.Info">
                             @subCategory.Name
                         </MudNavLink>
                     }
                 }
                 else
                 {
-                    <MudNavLink Href="@($"/category/{category.Id}")"
-                                Icon="@Icons.Material.Filled.Inbox"
-                                IconColor="Color.Default">
-                        Ver categoría
+                    <MudNavLink Class="nav-link-subcategory"
+                                Href="@($"/category/{category.Id}")"
+                                Icon="@Icons.Material.Filled.OpenInNew"
+                                IconColor="Color.Info">
+                        Ver productos
                     </MudNavLink>
                 }
             </MudNavGroup>
@@ -65,6 +129,69 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadCategoriesAsync();
+    }
+
+    private string GetCategoryIcon(string? iconName)
+    {
+        if (string.IsNullOrEmpty(iconName))
+        {
+            return Icons.Material.Filled.Category;
+        }
+
+        // Mapeo de iconos de Material Design - Categorías de Tecnología
+        return iconName switch
+        {
+            // Computadoras
+            "Desktop" => Icons.Material.Filled.DesktopMac,
+            "Laptop" => Icons.Material.Filled.Laptop,
+            "Tablet" => Icons.Material.Filled.TabletMac,
+            "Smartphone" => Icons.Material.Filled.Smartphone,
+
+            // Componentes
+            "Memory" => Icons.Material.Filled.Memory,
+            "Storage" => Icons.Material.Filled.Storage,
+            "Cpu" => Icons.Material.Filled.Memory,
+            "Gpu" => Icons.Material.Filled.ViewWeek,
+
+            // Periféricos
+            "Mouse" => Icons.Material.Filled.TouchApp,
+            "Keyboard" => Icons.Material.Filled.Keyboard,
+            "Monitor" => Icons.Material.Filled.Monitor,
+            "Headphones" => Icons.Material.Filled.Headphones,
+            "Speaker" => Icons.Material.Filled.Speaker,
+            "Camera" => Icons.Material.Filled.Camera,
+            "Printer" => Icons.Material.Filled.Print,
+
+            // Red y Conectividad
+            "Router" => Icons.Material.Filled.Router,
+            "Wifi" => Icons.Material.Filled.Wifi,
+            "Cable" => Icons.Material.Filled.Cable,
+            "NetworkCheck" => Icons.Material.Filled.CloudQueue,
+            "SecurityCamera" => Icons.Material.Filled.Videocam,
+
+            // Oficina
+            "Print" => Icons.Material.Filled.Print,
+            "Description" => Icons.Material.Filled.Description,
+            "Chair" => Icons.Material.Filled.EventSeat,
+            "Lightbulb" => Icons.Material.Filled.Lightbulb,
+
+            // Software y Servicios
+            "Code" => Icons.Material.Filled.Code,
+            "Cloud" => Icons.Material.Filled.Cloud,
+            "VpnLock" => Icons.Material.Filled.VpnLock,
+            "Extension" => Icons.Material.Filled.Extension,
+
+            // Accesorios
+            "Backpack" => Icons.Material.Filled.Backpack,
+            "Cases" => Icons.Material.Filled.Cases,
+            "DisplaySettings" => Icons.Material.Filled.DisplaySettings,
+            "Settings" => Icons.Material.Filled.Settings,
+
+            // Legacy (para compatibilidad)
+            "ShoppingCart" => Icons.Material.Filled.ShoppingCart,
+            "Category" => Icons.Material.Filled.Category,
+            _ => Icons.Material.Filled.Category
+        };
     }
 
     private void PrefetchSubCategory(SubCategory subCategory)
