@@ -70,6 +70,7 @@
             grid-template-columns: 1fr;
         }
     }
+
 </style>
 
 @if (categoryDTO is null)
@@ -121,6 +122,69 @@ else
                             </div>
                         }
                     </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Icono:</label>
+                    <select class="form-control form-control-lg" @bind="categoryDTO.Icon" @bind:event="oninput">
+                        <option value="">-- Seleccionar icono --</option>
+                        <optgroup label="Computadoras">
+                            <option value="Desktop">PC</option>
+                            <option value="Laptop">Laptop</option>
+                            <option value="Tablet">Tablet</option>
+                            <option value="Smartphone">Teléfono</option>
+                        </optgroup>
+                        <optgroup label="Componentes">
+                            <option value="Memory">Memoria</option>
+                            <option value="Storage">Almacenamiento</option>
+                            <option value="Cpu">Procesador</option>
+                            <option value="Gpu">Gráficos</option>
+                            <option value="HardDrive">Disco Duro</option>
+                            <option value="SSD">Disco SSD</option>
+                        </optgroup>
+                        <optgroup label="Periféricos">
+                            <option value="Mouse">Ratón</option>
+                            <option value="Keyboard">Teclado</option>
+                            <option value="Monitor">Monitor</option>
+                            <option value="Headphones">Audífonos</option>
+                            <option value="Speaker">Parlante</option>
+                            <option value="Camera">Cámara</option>
+                            <option value="Printer">Impresora</option>
+                        </optgroup>
+                        <optgroup label="Red y Conectividad">
+                            <option value="Router">Router</option>
+                            <option value="Wifi">WiFi</option>
+                            <option value="Cable">Cables</option>
+                            <option value="NetworkCheck">Red</option>
+                            <option value="SecurityCamera">Cámara IP</option>
+                        </optgroup>
+                        <optgroup label="Oficina">
+                            <option value="Print">Impresión</option>
+                            <option value="Description">Documentos</option>
+                            <option value="Chair">Muebles</option>
+                            <option value="Lightbulb">Iluminación</option>
+                        </optgroup>
+                        <optgroup label="Software y Servicios">
+                            <option value="Code">Software</option>
+                            <option value="Cloud">Nube</option>
+                            <option value="VpnLock">Seguridad</option>
+                            <option value="Extension">Extensiones</option>
+                        </optgroup>
+                        <optgroup label="Accesorios">
+                            <option value="Backpack">Mochilas</option>
+                            <option value="Cases">Fundas</option>
+                            <option value="DisplaySettings">Soportes</option>
+                            <option value="Settings">Accesorios</option>
+                        </optgroup>
+                    </select>
+
+                    @if (categoryDTO != null && !string.IsNullOrEmpty(categoryDTO.Icon))
+                    {
+                        <div style="margin-top: 12px; padding: 12px; background-color: #f5f5f5; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 0.9rem; color: #666;">Vista previa:</span>
+                            <MudIcon Icon="@GetCategoryIcon(categoryDTO.Icon)" Color="Color.Primary" Size="Size.Large"></MudIcon>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -276,5 +340,122 @@ else
     public async Task Cancel()
     {
         await Modal.HideAsync();
+    }
+
+    private List<KeyValuePair<string, string>> GetIconList()
+    {
+        return new List<KeyValuePair<string, string>>
+        {
+            // Computadoras
+            new("Desktop", "PC"),
+            new("Laptop", "Laptop"),
+            new("Tablet", "Tablet"),
+            new("Smartphone", "Teléfono"),
+
+            // Componentes
+            new("Memory", "Memoria"),
+            new("Storage", "Almacenamiento"),
+            new("Cpu", "Procesador"),
+            new("Gpu", "Gráficos"),
+
+            // Periféricos
+            new("Mouse", "Ratón"),
+            new("Keyboard", "Teclado"),
+            new("Monitor", "Monitor"),
+            new("Headphones", "Audífonos"),
+            new("Speaker", "Parlante"),
+            new("Camera", "Cámara"),
+            new("Printer", "Impresora"),
+
+            // Red y Conectividad
+            new("Router", "Router"),
+            new("Wifi", "WiFi"),
+            new("Cable", "Cables"),
+            new("NetworkCheck", "Red"),
+            new("SecurityCamera", "Cámara IP"),
+
+            // Oficina
+            new("Print", "Impresión"),
+            new("Description", "Documentos"),
+            new("Chair", "Muebles"),
+            new("Lightbulb", "Iluminación"),
+
+            // Software y Servicios
+            new("Code", "Software"),
+            new("Cloud", "Nube"),
+            new("VpnLock", "Seguridad"),
+            new("Extension", "Extensiones"),
+
+            // Accesorios
+            new("Backpack", "Mochilas"),
+            new("Cases", "Fundas"),
+            new("DisplaySettings", "Soportes"),
+            new("Settings", "Accesorios")
+        };
+    }
+
+    private string GetCategoryIcon(string? iconName)
+    {
+        if (string.IsNullOrEmpty(iconName))
+        {
+            return Icons.Material.Filled.Category;
+        }
+
+        // Mapeo de iconos de Material Design - Categorías de Tecnología
+        return iconName switch
+        {
+            // Computadoras
+            "Desktop" => Icons.Material.Filled.DesktopMac,
+            "Laptop" => Icons.Material.Filled.Laptop,
+            "Tablet" => Icons.Material.Filled.TabletMac,
+            "Smartphone" => Icons.Material.Filled.Smartphone,
+
+            // Componentes
+            "Memory" => Icons.Material.Filled.Memory,
+            "Storage" => Icons.Material.Filled.FolderOpen,
+            "Cpu" => Icons.Material.Filled.Memory,
+            "Gpu" => Icons.Material.Filled.ViewWeek,
+            "HardDrive" => Icons.Material.Filled.Folder,
+            "SSD" => Icons.Material.Filled.SdStorage,
+
+            // Periféricos
+            "Mouse" => Icons.Material.Filled.TouchApp,
+            "Keyboard" => Icons.Material.Filled.Keyboard,
+            "Monitor" => Icons.Material.Filled.Monitor,
+            "Headphones" => Icons.Material.Filled.Headphones,
+            "Speaker" => Icons.Material.Filled.Speaker,
+            "Camera" => Icons.Material.Filled.Camera,
+            "Printer" => Icons.Material.Filled.Print,
+
+            // Red y Conectividad
+            "Router" => Icons.Material.Filled.Router,
+            "Wifi" => Icons.Material.Filled.Wifi,
+            "Cable" => Icons.Material.Filled.Cable,
+            "NetworkCheck" => Icons.Material.Filled.CloudQueue,
+            "SecurityCamera" => Icons.Material.Filled.Videocam,
+
+            // Oficina
+            "Print" => Icons.Material.Filled.Print,
+            "Description" => Icons.Material.Filled.Description,
+            "Chair" => Icons.Material.Filled.EventSeat,
+            "Lightbulb" => Icons.Material.Filled.Lightbulb,
+
+            // Software y Servicios
+            "Code" => Icons.Material.Filled.Code,
+            "Cloud" => Icons.Material.Filled.Cloud,
+            "VpnLock" => Icons.Material.Filled.VpnLock,
+            "Extension" => Icons.Material.Filled.Extension,
+
+            // Accesorios
+            "Backpack" => Icons.Material.Filled.Backpack,
+            "Cases" => Icons.Material.Filled.Cases,
+            "DisplaySettings" => Icons.Material.Filled.DisplaySettings,
+            "Settings" => Icons.Material.Filled.Settings,
+
+            // Legacy (para compatibilidad)
+            "ShoppingCart" => Icons.Material.Filled.ShoppingCart,
+            "Category" => Icons.Material.Filled.Category,
+            _ => Icons.Material.Filled.Category
+        };
     }
 }
