@@ -1,0 +1,99 @@
+@inherits InputBase<string>
+
+<div class="form-input-wrapper">
+    <input
+        type="text"
+        class="form-input"
+        @bind="CurrentValueAsString"
+        @oninput="OnInputAsync"
+        @onblur="FormatDocumentAsync"
+        placeholder="@Placeholder"
+        disabled="@IsDisabled"
+        maxlength="@MaxLength" />
+    <div class="form-input-icon">
+        <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Placeholder { get; set; } = "Ej: 054-0025462-8";
+    [Parameter] public bool IsDisabled { get; set; } = false;
+    [Parameter] public int MaxLength { get; set; } = 15;
+
+    protected override bool TryParseValueFromString(string? value, out string result, out string validationErrorMessage)
+    {
+        result = value ?? string.Empty;
+        validationErrorMessage = string.Empty;
+        return true;
+    }
+
+    // Se ejecuta mientras se escribe
+    private async Task OnInputAsync(ChangeEventArgs e)
+    {
+        await LimitAndFormatAsync();
+    }
+
+    // Limita a 11 dígitos máximo y formatea mientras se escribe
+    private async Task LimitAndFormatAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentValueAsString))
+            return;
+
+        // Remover todos los caracteres que no sean dígitos
+        var digitsOnly = System.Text.RegularExpressions.Regex.Replace(CurrentValueAsString, @"\D", "");
+
+        // Limitar a máximo 11 dígitos
+        if (digitsOnly.Length > 11)
+        {
+            digitsOnly = digitsOnly.Substring(0, 11);
+        }
+
+        // Aplicar el formato mientras se escribe
+        string formatted;
+
+        if (digitsOnly.Length == 11)
+        {
+            // Formato completo: XXX-XXXXXXX-X
+            formatted = $"{digitsOnly.Substring(0, 3)}-{digitsOnly.Substring(3, 7)}-{digitsOnly.Substring(10, 1)}";
+        }
+        else if (digitsOnly.Length > 3)
+        {
+            // Formato parcial: XXX-XXXXXXX
+            formatted = $"{digitsOnly.Substring(0, 3)}-{digitsOnly.Substring(3)}";
+        }
+        else
+        {
+            // Sin formato: XXX
+            formatted = digitsOnly;
+        }
+
+        CurrentValueAsString = formatted;
+    }
+
+    // Formatea el documento al salir del campo
+    private async Task FormatDocumentAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentValueAsString))
+            return;
+
+        // Remover todos los caracteres que no sean dígitos
+        var digitsOnly = System.Text.RegularExpressions.Regex.Replace(CurrentValueAsString, @"\D", "");
+
+        // Limitar a máximo 11 dígitos
+        if (digitsOnly.Length > 11)
+        {
+            digitsOnly = digitsOnly.Substring(0, 11);
+        }
+
+        // Aplicar el formato final
+        if (digitsOnly.Length == 11)
+        {
+            var formatted = $"{digitsOnly.Substring(0, 3)}-{digitsOnly.Substring(3, 7)}-{digitsOnly.Substring(10, 1)}";
+            CurrentValueAsString = formatted;
+        }
+        else
+        {
+            CurrentValueAsString = digitsOnly;
+        }
+    }
+}

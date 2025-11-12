@@ -1,0 +1,121 @@
+@inherits InputBase<string>
+
+<div class="form-input-wrapper" style="position: relative;">
+    <div class="form-input-icon" style="left: 15px;">
+        <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+    </div>
+    <span style="position: absolute; left: 50px; top: 50%; transform: translateY(-50%); color: #2c3e50; font-weight: 600; pointer-events: none; z-index: 2;">+1</span>
+    <input
+        type="text"
+        class="form-input"
+        style="padding-left: 75px; padding-right: 45px;"
+        @bind="CurrentValueAsString"
+        @oninput="OnInputAsync"
+        @onblur="OnBlurAsync"
+        placeholder="@Placeholder"
+        disabled="@IsDisabled"
+        maxlength="@MaxLength"
+        inputmode="numeric" />
+</div>
+
+@if (showWarning)
+{
+    <div style="color: #ff9800; font-size: 0.85rem; margin-top: 8px; padding: 8px 12px; background: #fff3e0; border-left: 3px solid #ff9800; border-radius: 4px;">
+        ⚠️ Los números en República Dominicana deben comenzar con 809, 829 o 849. (Ej: 809-509-9999)
+    </div>
+}
+
+@code {
+    [Parameter] public string? Placeholder { get; set; } = "809-509-9999";
+    [Parameter] public bool IsDisabled { get; set; } = false;
+    [Parameter] public int MaxLength { get; set; } = 12; // XXX-XXX-XXXX = 12 caracteres
+
+    private bool showWarning = false;
+
+    protected override bool TryParseValueFromString(string? value, out string result, out string validationErrorMessage)
+    {
+        result = value ?? string.Empty;
+        validationErrorMessage = string.Empty;
+        return true;
+    }
+
+    // Se ejecuta mientras se escribe
+    private async Task OnInputAsync(ChangeEventArgs e)
+    {
+        await LimitAndFormatAsync();
+    }
+
+    // Limita a 10 dígitos máximo y formatea mientras se escribe
+    private async Task LimitAndFormatAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentValueAsString))
+            return;
+
+        // Remover todos los caracteres que no sean dígitos
+        var digitsOnly = System.Text.RegularExpressions.Regex.Replace(CurrentValueAsString, @"\D", "");
+
+        // Limitar a máximo 10 dígitos - TRUNCAR AGRESIVAMENTE
+        if (digitsOnly.Length > 10)
+        {
+            digitsOnly = digitsOnly.Substring(0, 10);
+        }
+
+        // Aplicar el formato mientras se escribe (sin el +1, que es solo visual)
+        string formatted;
+
+        if (digitsOnly.Length == 10)
+        {
+            // Formato completo: XXX-XXX-XXXX
+            formatted = $"{digitsOnly.Substring(0, 3)}-{digitsOnly.Substring(3, 3)}-{digitsOnly.Substring(6, 4)}";
+        }
+        else if (digitsOnly.Length > 6)
+        {
+            // Formato parcial: XXX-XXX-XXXX
+            formatted = $"{digitsOnly.Substring(0, 3)}-{digitsOnly.Substring(3, 3)}-{digitsOnly.Substring(6)}";
+        }
+        else if (digitsOnly.Length > 3)
+        {
+            // Formato parcial: XXX-XXXX
+            formatted = $"{digitsOnly.Substring(0, 3)}-{digitsOnly.Substring(3)}";
+        }
+        else
+        {
+            // Sin formato: XXX
+            formatted = digitsOnly;
+        }
+
+        CurrentValueAsString = formatted;
+        StateHasChanged();
+    }
+
+    // Se ejecuta al salir del campo
+    private async Task OnBlurAsync()
+    {
+        if (string.IsNullOrEmpty(CurrentValueAsString))
+        {
+            showWarning = false;
+            return;
+        }
+
+        // Primero, aplicar el formato/truncado por si se pegó un número largo
+        await LimitAndFormatAsync();
+
+        // Remover todos los caracteres que no sean dígitos
+        var digitsOnly = System.Text.RegularExpressions.Regex.Replace(CurrentValueAsString, @"\D", "");
+
+        // Mostrar advertencia si no tiene exactamente 10 dígitos o no comienza con 809, 829 o 849
+        if (digitsOnly.Length != 10 ||
+            (!digitsOnly.StartsWith("809") &&
+             !digitsOnly.StartsWith("829") &&
+             !digitsOnly.StartsWith("849")))
+        {
+            showWarning = true;
+        }
+        else
+        {
+            showWarning = false;
+        }
+
+        StateHasChanged();
+    }
+}

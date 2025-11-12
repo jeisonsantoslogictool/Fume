@@ -11,6 +11,10 @@ namespace fume.shared.Enttities
         [MaxLength(150, ErrorMessage = "El campo {0} no puede tener mas de {1} Caracteres")]
         public string Name { get; set; } = null!;
 
+        [Display(Name = "Patrón de Documento")]
+        [MaxLength(50, ErrorMessage = "El campo {0} no puede tener mas de {1} Caracteres")]
+        public string? DocumentPattern { get; set; }
+
         public ICollection<State>? States { get; set; }
 
         [Display(Name = "Estados/Departamentos")]

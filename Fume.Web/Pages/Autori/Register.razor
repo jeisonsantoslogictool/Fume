@@ -345,29 +345,13 @@
 
                     <div class="form-group">
                         <label class="form-label">Documento</label>
-                        <div class="form-input-wrapper">
-                            <InputText class="form-input"
-                                       @bind-Value="userDTO.Document"
-                                       placeholder="Ej: 1234567890"
-                                       disabled="@isLoading" />
-                            <div class="form-input-icon">
-                                <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" />
-                            </div>
-                        </div>
+                        <FormattedDocumentInput @bind-Value="userDTO.Document" IsDisabled="@isLoading" />
                         <ValidationMessage For="@(() => userDTO.Document)" class="validation-message" />
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Teléfono</label>
-                        <div class="form-input-wrapper">
-                            <InputText class="form-input"
-                                       @bind-Value="userDTO.PhoneNumber"
-                                       placeholder="Ej: +57 300 123 4567"
-                                       disabled="@isLoading" />
-                            <div class="form-input-icon">
-                                <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
-                            </div>
-                        </div>
+                        <FormattedPhoneInput @bind-Value="userDTO.PhoneNumber" IsDisabled="@isLoading" />
                         <ValidationMessage For="@(() => userDTO.PhoneNumber)" class="validation-message" />
                     </div>
 
@@ -376,7 +360,7 @@
                         <div class="form-input-wrapper">
                             <InputText class="form-input"
                                        @bind-Value="userDTO.Address"
-                                       placeholder="Ej: Calle 123 #45-67"
+                                       placeholder="Ej: Calle 123 #45"
                                        disabled="@isLoading" />
                             <div class="form-input-icon">
                                 <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" />
@@ -394,16 +378,16 @@
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">País</label>
+                        <label class="form-label">País <span style="font-size: 0.85rem; color: #6c757d;">(Fijo)</span></label>
                         <div class="form-input-wrapper">
-                            <select class="form-select" @onchange="CountryChangedAsync" disabled="@isLoading">
-                                <option value="0">-- Seleccione un país --</option>
-                                @if (countries is not null)
+                            <select class="form-select" disabled="true" style="background: #e9ecef; cursor: not-allowed;">
+                                @if (selectedCountry is not null)
                                 {
-                                    @foreach (var country in countries)
-                                    {
-                                        <option value="@country.Id">@country.Name</option>
-                                    }
+                                    <option value="@selectedCountry.Id" selected>@selectedCountry.Name</option>
+                                }
+                                else if (countries?.Count > 0)
+                                {
+                                    <option value="@countries[0].Id" selected>@countries[0].Name</option>
                                 }
                             </select>
                             <div class="form-input-icon">
@@ -559,10 +543,17 @@
     private bool isLoading = false;
     private bool showPassword = false;
     private bool showPasswordConfirm = false;
+    private Country? selectedCountry;
 
     protected async override Task OnInitializedAsync()
     {
         await LoadCountriesAsync();
+        // Preseleccionar el primer país automáticamente
+        if (countries?.Count > 0)
+        {
+            selectedCountry = countries[0];
+            await LoadStatesAsync(selectedCountry.Id);
+        }
         if (userDTO.Photo != null)
         {
             imageUrl = Convert.ToBase64String(userDTO.Photo);
@@ -627,15 +618,8 @@
 
     private async Task CountryChangedAsync(ChangeEventArgs e)
     {
-        var selectedCountry = Convert.ToInt32(e.Value!);
-        states = null;
-        cities = null;
-        userDTO.CityId = 0;
-
-        if (selectedCountry > 0)
-        {
-            await LoadStatesAsync(selectedCountry);
-        }
+        // El país está fijo y no se puede cambiar en el registro
+        // Esta función se mantiene por compatibilidad pero no realiza acción alguna
     }
 
     private async Task StateChangedAsync(ChangeEventArgs e)
@@ -658,6 +642,27 @@
         {
             userDTO.UserName = userDTO.Email;
             userDTO.UserType = UserType.User;
+
+            // Validar que el teléfono tenga exactamente 10 dígitos y comience con 809, 829 o 849
+            if (!IsPhoneNumberValid(userDTO.PhoneNumber))
+            {
+                await sweetAlertService.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Teléfono Inválido",
+                    Text = "El número de teléfono debe tener exactamente 10 dígitos y iniciar con 809, 829 o 849. (Ej: +1 809-509-9999)",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonText = "Aceptar",
+                    ConfirmButtonColor = "#2196F3"
+                });
+                isLoading = false;
+                return;
+            }
+
+            // Asegurar que el país está asignado correctamente
+            if (selectedCountry != null)
+            {
+                // El país está fijado, pero seguimos usando el flujo normal de estados/ciudades
+            }
 
             var responseHttp = await repository.post<UserDTO, TokenDTO>("/api/accounts/CreateUser", userDTO);
 
@@ -694,5 +699,32 @@
         {
             isLoading = false;
         }
+    }
+
+    // Método para validar que el teléfono tiene exactamente 10 dígitos y comienza con 809, 829 o 849
+    private bool IsPhoneNumberValid(string? phoneNumber)
+    {
+        if (string.IsNullOrEmpty(phoneNumber))
+            return false;
+
+        var digitsOnly = System.Text.RegularExpressions.Regex.Replace(phoneNumber, @"\D", "");
+
+        // Si comienza con "1", removerlo
+        if (digitsOnly.StartsWith("1"))
+        {
+            digitsOnly = digitsOnly.Substring(1);
+        }
+
+        // Validar que tenga exactamente 10 dígitos
+        if (digitsOnly.Length != 10)
+            return false;
+
+        // Validar que comience con 809, 829 o 849
+        if (!digitsOnly.StartsWith("809") &&
+            !digitsOnly.StartsWith("829") &&
+            !digitsOnly.StartsWith("849"))
+            return false;
+
+        return true;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using fume.shared.Enttities;
+using fume.shared.Validators;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -23,6 +24,10 @@ namespace fume.shared.DTOs
         [Required(ErrorMessage = "El campo {0} es obligatorio.")]
         [StringLength(20, MinimumLength = 6, ErrorMessage = "El campo {0} debe tener entre {2} y {1} carácteres.")]
         public string PasswordConfirm { get; set; } = null!;
+
+        [Display(Name = "Teléfono")]
+        [Required(ErrorMessage = "El campo {0} es obligatorio.")]
+        public new string? PhoneNumber { get; set; }
     }
 
 }
