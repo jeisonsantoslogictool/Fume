@@ -1,0 +1,29 @@
+@* Botón flotante para contacto por WhatsApp *@
+<div class="whatsapp-float" @onclick="OpenWhatsApp">
+    <MudTooltip Text="Solicitar servicios o cotizaciones" Placement="MudBlazor.Placement.Left">
+        <MudFab Color="Color.Success"
+                StartIcon="@Icons.Custom.Brands.WhatsApp"
+                Size="Size.Large"
+                Class="whatsapp-button" />
+    </MudTooltip>
+</div>
+
+@code {
+    [Parameter]
+    public string PhoneNumber { get; set; } = "573001234567"; // Número por defecto, cambiar por el de ITplus
+
+    [Parameter]
+    public string Message { get; set; } = "Hola, me gustaría solicitar información sobre servicios o cotizaciones.";
+
+    private void OpenWhatsApp()
+    {
+        var encodedMessage = Uri.EscapeDataString(Message);
+        var whatsappUrl = $"https://wa.me/{PhoneNumber}?text={encodedMessage}";
+
+        // Abrir en nueva pestaña
+        NavigationManager.NavigateTo(whatsappUrl, true);
+    }
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+}
