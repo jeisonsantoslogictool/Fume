@@ -32,6 +32,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Agregar Memory Cache para optimización
+builder.Services.AddMemoryCache();
+
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

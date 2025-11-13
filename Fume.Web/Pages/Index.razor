@@ -803,9 +803,6 @@ else
 
     protected async override Task OnParametersSetAsync()
     {
-        // Debug: Ver qué parámetros se están recibiendo
-        Console.WriteLine($"OnParametersSetAsync - CategoryId: {CategoryId}, SubCategoryId: {SubCategoryId}");
-
         // Siempre cargar la vista basada en parámetros cuando cambian
         if (!firstRender)
         {
@@ -815,31 +812,21 @@ else
 
     private async Task LoadViewBasedOnParametersAsync()
     {
-        Console.WriteLine($"LoadViewBasedOnParametersAsync START - SubCategoryId: {SubCategoryId}, CategoryId: {CategoryId}, currentView: {currentView}");
-
         // Si hay SubCategoryId, mostrar productos
         if (SubCategoryId.HasValue && SubCategoryId.Value > 0)
         {
-            Console.WriteLine($"Loading products for SubCategoryId: {SubCategoryId.Value}");
             await LoadProductsBySubCategoryIdAsync(SubCategoryId.Value);
-            Console.WriteLine($"After LoadProductsBySubCategoryIdAsync - currentView: {currentView}");
         }
         // Si hay CategoryId, mostrar subcategorías
         else if (CategoryId.HasValue && CategoryId.Value > 0)
         {
-            Console.WriteLine($"Loading subcategories for CategoryId: {CategoryId.Value}");
             await LoadSubCategoriesByCategoryIdAsync(CategoryId.Value);
-            Console.WriteLine($"After LoadSubCategoriesByCategoryIdAsync - currentView: {currentView}");
         }
         // Si no hay parámetros, mostrar categorías
         else if (string.IsNullOrWhiteSpace(Filter))
         {
-            Console.WriteLine("Loading categories view");
             await LoadCategoriesViewAsync();
-            Console.WriteLine($"After LoadCategoriesViewAsync - currentView: {currentView}");
         }
-
-        Console.WriteLine($"LoadViewBasedOnParametersAsync END - currentView: {currentView}");
     }
 
     public void Dispose()
@@ -883,7 +870,6 @@ else
 
     private async Task LoadCategoriesAsync()
     {
-        Console.WriteLine("LoadCategoriesAsync START");
         loading = true;
         var response = await repository.Get<List<Category>>("/api/categories?RecordsNumber=999");
 
@@ -896,10 +882,7 @@ else
         }
 
         categories = response.Response;
-        // DON'T set currentView here - it will be set by LoadViewBasedOnParametersAsync
-        // currentView = ViewType.Categories;
         loading = false;
-        Console.WriteLine("LoadCategoriesAsync END - categories loaded, NOT setting currentView");
     }
 
     private async Task LoadCategoriesViewAsync()
@@ -985,14 +968,11 @@ else
 
     private async Task LoadProductsBySubCategoryIdAsync(int subCategoryId)
     {
-        Console.WriteLine($"LoadProductsBySubCategoryIdAsync START - subCategoryId: {subCategoryId}, isNavigating: {isNavigating}");
-
         if (isNavigating) return;
         isNavigating = true;
 
         try
         {
-            Console.WriteLine($"Setting currentView to Products for subCategoryId: {subCategoryId}");
             currentView = ViewType.Products;
 
             // Cargar la subcategoría seleccionada primero
@@ -1071,15 +1051,12 @@ else
             // Intentar obtener productos del cache
             if (productsCache.TryGetValue(subCategoryId, out var cachedProducts))
             {
-                Console.WriteLine($"Found {cachedProducts?.Count ?? 0} products in cache for subCategoryId: {subCategoryId}");
                 products = cachedProducts;
                 loading = false;
-                Console.WriteLine($"LoadProductsBySubCategoryIdAsync - Using cached products, currentView: {currentView}");
                 return;
             }
 
             // Cargar productos desde API
-            Console.WriteLine($"Loading products from API for subCategoryId: {subCategoryId}");
             loading = true;
             loadedImages.Clear();
 
@@ -1097,11 +1074,9 @@ else
             if (products != null)
             {
                 productsCache[subCategoryId] = products;
-                Console.WriteLine($"Loaded {products.Count} products from API and cached them");
             }
 
             loading = false;
-            Console.WriteLine($"LoadProductsBySubCategoryIdAsync END - currentView: {currentView}, products count: {products?.Count ?? 0}");
         }
         finally
         {

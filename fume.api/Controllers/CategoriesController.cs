@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace fume.api.Controllers
 {
@@ -16,10 +17,12 @@ namespace fume.api.Controllers
     public class CategoriesController : ControllerBase
     {
         private readonly DataContext _context;
+        private readonly IMemoryCache _cache;
 
-        public CategoriesController(DataContext context)
+        public CategoriesController(DataContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
 
@@ -76,12 +79,90 @@ namespace fume.api.Controllers
        
         }
 
+        [HttpGet("light")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetLight([FromQuery] PaginationDTO pagination)
+        {
+            try
+            {
+                // Verificar cache
+                var timestamp = _cache.Get<DateTime?>("categories_cache_timestamp");
+                if (timestamp == null)
+                {
+                    _cache.Set("categories_cache_timestamp", DateTime.UtcNow);
+                    timestamp = DateTime.UtcNow;
+                }
+
+                var cacheKey = $"categories_light_{pagination.Filter ?? "all"}_{pagination.Page}_{pagination.RecordsNumber}_{timestamp:yyyyMMddHHmmss}";
+
+                if (_cache.TryGetValue(cacheKey, out List<Category>? cachedCategories))
+                {
+                    return Ok(cachedCategories);
+                }
+
+                var queryable = _context.categories
+                    .AsNoTracking()
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(pagination.Filter))
+                {
+                    queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
+                }
+
+                var categories = await queryable
+                    .OrderBy(x => x.Name)
+                    .Paginate(pagination)
+                    .Select(x => new Category
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        Icon = x.Icon,
+                        ImageUrl = x.ImageUrl,
+                        HasImage = x.Image != null && x.Image.Length > 0,
+                        Image = null
+                    })
+                    .ToListAsync();
+
+                // Guardar en cache por 10 minutos
+                var cacheOptions = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
+                    SlidingExpiration = TimeSpan.FromMinutes(5)
+                };
+                _cache.Set(cacheKey, categories, cacheOptions);
+
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpGet("full")]
         [AllowAnonymous]
         public async Task<ActionResult> GetFull([FromQuery] PaginationDTO pagination)
         {
             try
             {
+                // Verificar si el cache sigue siendo válido (no ha sido invalidado)
+                var timestamp = _cache.Get<DateTime?>("categories_cache_timestamp");
+                if (timestamp == null)
+                {
+                    // Inicializar timestamp si no existe
+                    _cache.Set("categories_cache_timestamp", DateTime.UtcNow);
+                    timestamp = DateTime.UtcNow;
+                }
+
+                // Crear clave de cache basada en filtro, paginación y timestamp
+                var cacheKey = $"categories_full_{pagination.Filter ?? "all"}_{pagination.Page}_{pagination.RecordsNumber}_{timestamp:yyyyMMddHHmmss}";
+
+                // Intentar obtener del cache
+                if (_cache.TryGetValue(cacheKey, out List<Category>? cachedCategories))
+                {
+                    return Ok(cachedCategories);
+                }
+
                 var queryable = _context.categories
                     .AsNoTracking()
                     .Include(x => x.SubCategories)
@@ -113,6 +194,14 @@ namespace fume.api.Controllers
                         }
                     }
                 }
+
+                // Guardar en cache por 10 minutos
+                var cacheOptions = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
+                    SlidingExpiration = TimeSpan.FromMinutes(5)
+                };
+                _cache.Set(cacheKey, categories, cacheOptions);
 
                 return Ok(categories);
             }
@@ -192,6 +281,9 @@ namespace fume.api.Controllers
             {
                 await _context.SaveChangesAsync();
 
+                // Invalidar cache de categorías
+                InvalidateCategoriesCache();
+
                 category.HasImage = category.Image != null && category.Image.Length > 0;
                 category.SubCategories = new List<SubCategory>();
                 category.ProductCategories = new List<ProductCategory>();
@@ -251,6 +343,9 @@ namespace fume.api.Controllers
                 _context.Update(existingCategory);
                 await _context.SaveChangesAsync();
 
+                // Invalidar cache de categorías
+                InvalidateCategoriesCache();
+
                 existingCategory.HasImage = existingCategory.Image != null && existingCategory.Image.Length > 0;
                 if (existingCategory.SubCategories == null)
                 {
@@ -291,7 +386,19 @@ namespace fume.api.Controllers
 
             _context.Remove(category);
             await _context.SaveChangesAsync();
+
+            // Invalidar cache de categorías
+            InvalidateCategoriesCache();
+
             return NoContent();
+        }
+
+        // Método para invalidar todas las entradas de cache relacionadas con categorías
+        private void InvalidateCategoriesCache()
+        {
+            // Actualizar el timestamp invalida efectivamente todas las claves de cache anteriores
+            // ya que las nuevas solicitudes usarán un timestamp diferente en la clave
+            _cache.Set("categories_cache_timestamp", DateTime.UtcNow);
         }
     }
 }

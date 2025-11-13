@@ -73,35 +73,67 @@
 
     <MudDivider Class="my-3" />
 
-    @if (categories != null && categories.Any())
+    @if (isLoading)
+    {
+        <!-- Loading Skeleton -->
+        @for (int i = 0; i < 5; i++)
+        {
+            <div style="padding: 12px; margin: 4px 8px;">
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="40px" Style="border-radius: 8px;" />
+            </div>
+        }
+    }
+    else if (categories != null && categories.Any())
     {
         @foreach (var category in categories)
         {
-            <MudNavGroup Class="category-nav-group" Title="@category.Name" Icon="@GetCategoryIcon(category.Icon)" IconColor="Color.Primary">
-                @if (category.SubCategories != null && category.SubCategories.Any())
+            <MudNavGroup Class="category-nav-group"
+                         Title="@category.Name"
+                         Icon="@GetCategoryIcon(category.Icon)"
+                         IconColor="Color.Primary"
+                         Expanded="@category.IsExpanded"
+                         ExpandedChanged="@(async (bool expanded) => await OnCategoryExpandedChanged(category, expanded))">
+                @if (loadingSubCategories.Contains(category.Id))
                 {
-                    @foreach (var subCategory in category.SubCategories)
+                    <!-- Loading skeleton para subcategorías -->
+                    <div style="padding: 8px 12px;">
+                        <MudSkeleton SkeletonType="SkeletonType.Text" Width="80%" />
+                        <MudSkeleton SkeletonType="SkeletonType.Text" Width="70%" />
+                    </div>
+                }
+                else if (subCategoriesByCategory.ContainsKey(category.Id))
+                {
+                    var subCategories = subCategoriesByCategory[category.Id];
+                    @if (subCategories.Any())
+                    {
+                        @foreach (var subCategory in subCategories)
+                        {
+                            <MudNavLink Class="nav-link-subcategory"
+                                        Href="@($"/subcategory/{subCategory.Id}")"
+                                        Icon="@Icons.Material.Filled.ChevronRight"
+                                        IconColor="Color.Info">
+                                @subCategory.Name
+                            </MudNavLink>
+                        }
+                    }
+                    else
                     {
                         <MudNavLink Class="nav-link-subcategory"
-                                    Href="@($"/subcategory/{subCategory.Id}")"
-                                    @onmouseenter="@(() => PrefetchSubCategory(subCategory))"
-                                    Icon="@Icons.Material.Filled.ChevronRight"
+                                    Href="@($"/category/{category.Id}")"
+                                    Icon="@Icons.Material.Filled.OpenInNew"
                                     IconColor="Color.Info">
-                            @subCategory.Name
+                            Ver productos
                         </MudNavLink>
                     }
                 }
-                else
-                {
-                    <MudNavLink Class="nav-link-subcategory"
-                                Href="@($"/category/{category.Id}")"
-                                Icon="@Icons.Material.Filled.OpenInNew"
-                                IconColor="Color.Info">
-                        Ver productos
-                    </MudNavLink>
-                }
             </MudNavGroup>
         }
+    }
+    else
+    {
+        <div style="padding: 16px; text-align: center; color: #888;">
+            <MudText Typo="Typo.body2">No hay categorías disponibles</MudText>
+        </div>
     }
 
     <AuthorizeView Roles="Admin">
@@ -125,10 +157,69 @@
 @code {
     private List<Category>? categories;
     private HashSet<int> prefetchedSubCategories = new HashSet<int>();
+    private bool isLoading = true;
+    private Dictionary<int, List<SubCategory>> subCategoriesByCategory = new Dictionary<int, List<SubCategory>>();
+    private HashSet<int> loadingSubCategories = new HashSet<int>();
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCategoriesAsync();
+    }
+
+    private async Task OnCategoryExpandedChanged(Category category, bool expanded)
+    {
+        // Actualizar el estado de expansión
+        category.IsExpanded = expanded;
+
+        if (expanded)
+        {
+            // Cargar subcategorías si no están en cache
+            if (!subCategoriesByCategory.ContainsKey(category.Id))
+            {
+                await LoadSubCategoriesForCategory(category.Id);
+            }
+
+            // Hacer prefetch de productos solo cuando se expande (no en hover)
+            if (subCategoriesByCategory.TryGetValue(category.Id, out var subCategories))
+            {
+                foreach (var subCategory in subCategories)
+                {
+                    PrefetchSubCategory(subCategory);
+                }
+            }
+        }
+    }
+
+    private async Task LoadSubCategoriesForCategory(int categoryId)
+    {
+        // Evitar múltiples cargas simultáneas
+        if (loadingSubCategories.Contains(categoryId))
+            return;
+
+        try
+        {
+            loadingSubCategories.Add(categoryId);
+            StateHasChanged();
+
+            var response = await repository.Get<List<SubCategory>>($"/api/subcategories/bycategory/{categoryId}");
+            if (!response.Error && response.Response != null)
+            {
+                subCategoriesByCategory[categoryId] = response.Response;
+            }
+            else
+            {
+                subCategoriesByCategory[categoryId] = new List<SubCategory>();
+            }
+        }
+        catch
+        {
+            subCategoriesByCategory[categoryId] = new List<SubCategory>();
+        }
+        finally
+        {
+            loadingSubCategories.Remove(categoryId);
+            StateHasChanged();
+        }
     }
 
     private string GetCategoryIcon(string? iconName)
@@ -211,15 +302,25 @@
     {
         try
         {
-            var response = await repository.Get<List<Category>>("/api/categories/full?RecordsNumber=100");
+            isLoading = true;
+            // Usar el endpoint ligero que solo trae categorías sin subcategorías
+            var response = await repository.Get<List<Category>>("/api/categories/light?RecordsNumber=100");
             if (!response.Error)
             {
                 categories = response.Response;
+            }
+            else
+            {
+                categories = new List<Category>();
             }
         }
         catch
         {
             categories = new List<Category>();
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 }

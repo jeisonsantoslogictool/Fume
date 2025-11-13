@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace fume.api.Controllers
 {
@@ -15,10 +16,12 @@ namespace fume.api.Controllers
     public class SubCategoriesController : ControllerBase
     {
         private readonly DataContext _context;
+        private readonly IMemoryCache _cache;
 
-        public SubCategoriesController(DataContext context)
+        public SubCategoriesController(DataContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         [HttpGet]
@@ -116,6 +119,21 @@ namespace fume.api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult> GetByCategory(int categoryId)
         {
+            // Verificar cache usando el mismo timestamp de categorías
+            var timestamp = _cache.Get<DateTime?>("categories_cache_timestamp");
+            if (timestamp == null)
+            {
+                _cache.Set("categories_cache_timestamp", DateTime.UtcNow);
+                timestamp = DateTime.UtcNow;
+            }
+
+            var cacheKey = $"subcategories_bycategory_{categoryId}_{timestamp:yyyyMMddHHmmss}";
+
+            if (_cache.TryGetValue(cacheKey, out List<SubCategory>? cachedSubCategories))
+            {
+                return Ok(cachedSubCategories);
+            }
+
             // Dos pasos: primero traer solo la longitud de la imagen, luego calcular HasImage en memoria
             var tempResult = await _context.SubCategories
                 .AsNoTracking()
@@ -143,6 +161,14 @@ namespace fume.api.Controllers
                 HasImage = x.ImageLength > 0,
                 ProductSubCategories = new List<ProductSubCategory>(new ProductSubCategory[x.ProductSubCategoriesNumber])
             }).ToList();
+
+            // Guardar en cache por 10 minutos
+            var cacheOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
+                SlidingExpiration = TimeSpan.FromMinutes(5)
+            };
+            _cache.Set(cacheKey, result, cacheOptions);
 
             return Ok(result);
         }

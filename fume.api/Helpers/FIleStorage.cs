@@ -58,10 +58,8 @@ namespace fume.api.Helpers
                 // Devuelve el Id del producto (o cualquier identificador único)
                 return productId.ToString();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Maneja la excepción (puedes registrarla, lanzarla nuevamente, etc.)
-                Console.WriteLine($"Error al guardar la imagen en la base de datos: {ex.Message}");
                 throw;
             }
         }    }
