@@ -103,7 +103,7 @@
                         <MudSkeleton SkeletonType="SkeletonType.Text" Width="70%" />
                     </div>
                 }
-                else if (cacheService.TryGetSubCategories(category.Id, out var subCategories) && subCategories != null)
+                else if (GetSubCategoriesFromCache(category.Id, out var subCategories) && subCategories != null)
                 {
                     @if (subCategories.Any())
                     {
@@ -112,7 +112,8 @@
                             <MudNavLink Class="nav-link-subcategory"
                                         Href="@($"/subcategory/{subCategory.Id}")"
                                         Icon="@Icons.Material.Filled.ChevronRight"
-                                        IconColor="Color.Info">
+                                        IconColor="Color.Info"
+                                        Match="NavLinkMatch.All">
                                 @subCategory.Name
                             </MudNavLink>
                         }
@@ -122,7 +123,8 @@
                         <MudNavLink Class="nav-link-subcategory"
                                     Href="@($"/category/{category.Id}")"
                                     Icon="@Icons.Material.Filled.OpenInNew"
-                                    IconColor="Color.Info">
+                                    IconColor="Color.Info"
+                                    Match="NavLinkMatch.All">
                             Ver productos
                         </MudNavLink>
                     }
@@ -161,12 +163,19 @@
     private bool isLoading = true;
     private HashSet<int> loadingSubCategories = new HashSet<int>();
     private string? currentUserId;
+    private Dictionary<int, List<SubCategory>?> subCategoriesCache = new Dictionary<int, List<SubCategory>?>();
 
     protected override async Task OnInitializedAsync()
     {
+        // Inicializar cache con versión
+        await cacheService.InitializeAsync();
+
         // Verificar si cambió el usuario y limpiar cache si es necesario
         await CheckUserAndClearCache();
+
+        // Cargar categorías y subcategorías en memoria desde localStorage
         await LoadCategoriesAsync();
+        await LoadAllSubCategoriesFromLocalStorage();
     }
 
     private async Task CheckUserAndClearCache()
@@ -177,7 +186,7 @@
             ? user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
             : null;
 
-        cacheService.CheckAndClearIfUserChanged(newUserId);
+        await cacheService.CheckAndClearIfUserChangedAsync(newUserId);
         currentUserId = newUserId;
     }
 
@@ -188,19 +197,39 @@
 
         if (expanded)
         {
-            // Cargar subcategorías si no están en cache compartido
-            if (!cacheService.TryGetSubCategories(category.Id, out _))
+            // Cargar subcategorías si no están en cache
+            if (!subCategoriesCache.ContainsKey(category.Id))
             {
                 await LoadSubCategoriesForCategory(category.Id);
             }
 
             // Hacer prefetch de productos solo cuando se expande (no en hover)
-            if (cacheService.TryGetSubCategories(category.Id, out var subCategories) && subCategories != null)
+            if (subCategoriesCache.TryGetValue(category.Id, out var subCategories) && subCategories != null)
             {
                 foreach (var subCategory in subCategories)
                 {
                     PrefetchSubCategory(subCategory);
                 }
+            }
+        }
+    }
+
+    private bool GetSubCategoriesFromCache(int categoryId, out List<SubCategory>? subCategories)
+    {
+        return subCategoriesCache.TryGetValue(categoryId, out subCategories);
+    }
+
+    private async Task LoadAllSubCategoriesFromLocalStorage()
+    {
+        // Cargar todas las subcategorías del localStorage al iniciar
+        if (categories == null) return;
+
+        foreach (var category in categories)
+        {
+            var cachedSubCategories = await cacheService.GetSubCategoriesAsync(category.Id);
+            if (cachedSubCategories != null)
+            {
+                subCategoriesCache[category.Id] = cachedSubCategories;
             }
         }
     }
@@ -211,24 +240,33 @@
         if (loadingSubCategories.Contains(categoryId))
             return;
 
+        // Si ya está en memoria, no hacer nada
+        if (subCategoriesCache.ContainsKey(categoryId))
+            return;
+
         try
         {
             loadingSubCategories.Add(categoryId);
             StateHasChanged();
 
+            // Obtener del API (ya no está en localStorage)
             var response = await repository.Get<List<SubCategory>>($"/api/subcategories/bycategory/{categoryId}");
             if (!response.Error && response.Response != null)
             {
-                cacheService.SetSubCategories(categoryId, response.Response);
+                subCategoriesCache[categoryId] = response.Response;
+                // Guardar en localStorage en segundo plano sin await
+                _ = cacheService.SetSubCategoriesAsync(categoryId, response.Response);
             }
             else
             {
-                cacheService.SetSubCategories(categoryId, new List<SubCategory>());
+                subCategoriesCache[categoryId] = new List<SubCategory>();
+                _ = cacheService.SetSubCategoriesAsync(categoryId, new List<SubCategory>());
             }
         }
         catch
         {
-            cacheService.SetSubCategories(categoryId, new List<SubCategory>());
+            subCategoriesCache[categoryId] = new List<SubCategory>();
+            _ = cacheService.SetSubCategoriesAsync(categoryId, new List<SubCategory>());
         }
         finally
         {
@@ -319,10 +357,11 @@
         {
             isLoading = true;
 
-            // Verificar si ya tenemos categorías en cache
-            if (cacheService.Categories != null)
+            // Verificar si ya tenemos categorías en localStorage
+            var cachedCategories = await cacheService.GetCategoriesAsync();
+            if (cachedCategories != null)
             {
-                categories = cacheService.Categories;
+                categories = cachedCategories;
                 isLoading = false;
                 return;
             }
@@ -332,7 +371,7 @@
             if (!response.Error)
             {
                 categories = response.Response;
-                cacheService.Categories = categories;
+                await cacheService.SetCategoriesAsync(categories);
             }
             else
             {

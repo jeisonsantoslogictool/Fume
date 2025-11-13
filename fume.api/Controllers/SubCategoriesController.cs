@@ -100,6 +100,7 @@ namespace fume.api.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [AllowAnonymous]
         public async Task<ActionResult> Get(int id)
         {
             var subCategory = await _context.SubCategories

@@ -1,82 +1,173 @@
 using fume.shared.Enttities;
+using Microsoft.JSInterop;
+using System.Text.Json;
 
 namespace Fume.Web.Services
 {
     public class CatalogCacheService
     {
-        // Cache de categorías
-        private List<Category>? _categories;
-
-        // Cache de subcategorías por categoría
-        private Dictionary<int, List<SubCategory>> _subCategoriesByCategory = new();
-
-        // Cache de productos por subcategoría
-        private Dictionary<int, List<Product>> _productsBySubCategory = new();
-
-        // Usuario actual (para limpiar cache al cambiar de usuario)
-        private string? _currentUserId;
+        private readonly IJSRuntime _jsRuntime;
+        private const string CATEGORIES_KEY = "fume_categories";
+        private const string SUBCATEGORIES_PREFIX = "fume_subcat_";
+        private const string PRODUCTS_PREFIX = "fume_prod_";
+        private const string USER_ID_KEY = "fume_user_id";
+        private const string CACHE_VERSION_KEY = "fume_cache_version";
+        private const string CACHE_VERSION = "1.0"; // Incrementar para invalidar cache antiguo
 
         // Eventos para notificar cambios
         public event Action? OnCacheCleared;
 
-        // Categorías
-        public List<Category>? Categories
+        public CatalogCacheService(IJSRuntime jsRuntime)
         {
-            get => _categories;
-            set => _categories = value;
+            _jsRuntime = jsRuntime;
+        }
+
+        // Inicializar y verificar versión del cache
+        public async Task InitializeAsync()
+        {
+            try
+            {
+                var storedVersion = await GetFromLocalStorage<string>(CACHE_VERSION_KEY);
+                if (storedVersion != CACHE_VERSION)
+                {
+                    // Cache antiguo, limpiar todo
+                    await ClearAll();
+                    await SetToLocalStorage(CACHE_VERSION_KEY, CACHE_VERSION);
+                }
+            }
+            catch
+            {
+                // Si hay error, limpiar cache
+                await ClearAll();
+            }
+        }
+
+        // Categorías
+        public async Task<List<Category>?> GetCategoriesAsync()
+        {
+            return await GetFromLocalStorage<List<Category>>(CATEGORIES_KEY);
+        }
+
+        public async Task SetCategoriesAsync(List<Category> categories)
+        {
+            await SetToLocalStorage(CATEGORIES_KEY, categories);
         }
 
         // Subcategorías
-        public bool TryGetSubCategories(int categoryId, out List<SubCategory>? subCategories)
+        public async Task<List<SubCategory>?> GetSubCategoriesAsync(int categoryId)
         {
-            return _subCategoriesByCategory.TryGetValue(categoryId, out subCategories);
+            return await GetFromLocalStorage<List<SubCategory>>($"{SUBCATEGORIES_PREFIX}{categoryId}");
         }
 
-        public void SetSubCategories(int categoryId, List<SubCategory> subCategories)
+        public async Task SetSubCategoriesAsync(int categoryId, List<SubCategory> subCategories)
         {
-            _subCategoriesByCategory[categoryId] = subCategories;
+            await SetToLocalStorage($"{SUBCATEGORIES_PREFIX}{categoryId}", subCategories);
         }
 
         // Productos
-        public bool TryGetProducts(int subCategoryId, out List<Product>? products)
+        public async Task<List<Product>?> GetProductsAsync(int subCategoryId)
         {
-            return _productsBySubCategory.TryGetValue(subCategoryId, out products);
+            return await GetFromLocalStorage<List<Product>>($"{PRODUCTS_PREFIX}{subCategoryId}");
         }
 
-        public void SetProducts(int subCategoryId, List<Product> products)
+        public async Task SetProductsAsync(int subCategoryId, List<Product> products)
         {
-            _productsBySubCategory[subCategoryId] = products;
+            await SetToLocalStorage($"{PRODUCTS_PREFIX}{subCategoryId}", products);
         }
 
         // Limpiar cache cuando cambia el usuario
-        public void CheckAndClearIfUserChanged(string? newUserId)
+        public async Task CheckAndClearIfUserChangedAsync(string? newUserId)
         {
-            if (_currentUserId != newUserId)
+            var currentUserId = await GetFromLocalStorage<string>(USER_ID_KEY);
+            if (currentUserId != newUserId)
             {
-                ClearAll();
-                _currentUserId = newUserId;
+                await ClearAll();
+                await SetToLocalStorage(USER_ID_KEY, newUserId ?? "");
             }
         }
 
         // Limpiar todo el cache
-        public void ClearAll()
+        public async Task ClearAll()
         {
-            _categories = null;
-            _subCategoriesByCategory.Clear();
-            _productsBySubCategory.Clear();
-            OnCacheCleared?.Invoke();
+            try
+            {
+                await _jsRuntime.InvokeVoidAsync("localStorage.clear");
+                OnCacheCleared?.Invoke();
+            }
+            catch
+            {
+                // Silenciar errores si localStorage no está disponible
+            }
         }
 
         // Limpiar solo productos
-        public void ClearProducts()
+        public async Task ClearProducts()
         {
-            _productsBySubCategory.Clear();
+            try
+            {
+                // Obtener todas las keys de localStorage
+                var keys = await GetAllLocalStorageKeys();
+                foreach (var key in keys)
+                {
+                    if (key.StartsWith(PRODUCTS_PREFIX))
+                    {
+                        await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", key);
+                    }
+                }
+            }
+            catch
+            {
+                // Silenciar errores
+            }
         }
 
-        // Limpiar solo subcategorías
-        public void ClearSubCategories()
+        // Métodos auxiliares privados
+        private async Task<T?> GetFromLocalStorage<T>(string key)
         {
-            _subCategoriesByCategory.Clear();
+            try
+            {
+                var json = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", key);
+                return string.IsNullOrEmpty(json) ? default : JsonSerializer.Deserialize<T>(json);
+            }
+            catch
+            {
+                return default;
+            }
+        }
+
+        private async Task SetToLocalStorage<T>(string key, T value)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(value);
+                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", key, json);
+            }
+            catch
+            {
+                // Silenciar errores si localStorage está lleno o no disponible
+            }
+        }
+
+        private async Task<List<string>> GetAllLocalStorageKeys()
+        {
+            try
+            {
+                var length = await _jsRuntime.InvokeAsync<int>("eval", "localStorage.length");
+                var keys = new List<string>();
+                for (int i = 0; i < length; i++)
+                {
+                    var key = await _jsRuntime.InvokeAsync<string>("localStorage.key", i);
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        keys.Add(key);
+                    }
+                }
+                return keys;
+            }
+            catch
+            {
+                return new List<string>();
+            }
         }
     }
 }
