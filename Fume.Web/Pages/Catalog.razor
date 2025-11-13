@@ -249,7 +249,8 @@
     {
         try
         {
-            var response = await repository.Get<List<Category>>("/api/categories?RecordsNumber=100");
+            // Usar endpoint ligero para mejor rendimiento
+            var response = await repository.Get<List<Category>>("/api/categories/light?RecordsNumber=100");
             if (!response.Error)
             {
                 Categories = response.Response ?? new List<Category>();

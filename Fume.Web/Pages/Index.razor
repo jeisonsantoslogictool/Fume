@@ -6,6 +6,8 @@
 @inject SweetAlertService sweetAlertService
 @inject Fume.Web.Services.CatalogNavigationService catalogNavigation
 @inject Fume.Web.Services.CartService cartService
+@inject Fume.Web.Services.CatalogCacheService cacheService
+@inject AuthenticationStateProvider authenticationStateProvider
 @using Microsoft.AspNetCore.Components.Web
 @layout MainLayout
 @using MudBlazor
@@ -734,11 +736,8 @@ else
     // Para el mini-carrito
     private bool isMiniCartOpen = false;
 
-    // Cache de subcategorías por ID de categoría
+    // Cache de subcategorías por ID de categoría (ahora se usa el servicio compartido)
     private Dictionary<int, List<SubCategory>> subCategoriesCache = new Dictionary<int, List<SubCategory>>();
-
-    // Cache de productos por ID de subcategoría
-    private Dictionary<int, List<Product>> productsCache = new Dictionary<int, List<Product>>();
 
     // Control de renders
     private bool shouldRender = true;
@@ -783,6 +782,14 @@ else
         if (firstRender)
         {
             await CheckIsAuthenticatedAsync();
+
+            // Verificar si cambió el usuario y limpiar cache si es necesario
+            var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.Identity?.IsAuthenticated == true
+                ? user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                : null;
+            cacheService.CheckAndClearIfUserChanged(userId);
 
             // Inicializar el carrito si el usuario está autenticado
             if (isAuthenticated)
@@ -843,7 +850,7 @@ else
         _ = Task.Run(async () =>
         {
             // Solo pre-cargar si no está en cache
-            if (!productsCache.ContainsKey(subCategory.Id))
+            if (!cacheService.TryGetProducts(subCategory.Id, out _))
             {
                 try
                 {
@@ -851,7 +858,7 @@ else
                     if (!response.Error && response.Response != null)
                     {
                         // Guardar en cache sin cambiar la UI
-                        productsCache[subCategory.Id] = response.Response;
+                        cacheService.SetProducts(subCategory.Id, response.Response);
                     }
                 }
                 catch
@@ -871,7 +878,8 @@ else
     private async Task LoadCategoriesAsync()
     {
         loading = true;
-        var response = await repository.Get<List<Category>>("/api/categories?RecordsNumber=999");
+        // Usar endpoint ligero para mejor rendimiento
+        var response = await repository.Get<List<Category>>("/api/categories/light?RecordsNumber=999");
 
         if (response.Error)
         {
@@ -1048,8 +1056,8 @@ else
                 }
             }
 
-            // Intentar obtener productos del cache
-            if (productsCache.TryGetValue(subCategoryId, out var cachedProducts))
+            // Intentar obtener productos del cache compartido
+            if (cacheService.TryGetProducts(subCategoryId, out var cachedProducts))
             {
                 products = cachedProducts;
                 loading = false;
@@ -1073,7 +1081,7 @@ else
             products = response.Response;
             if (products != null)
             {
-                productsCache[subCategoryId] = products;
+                cacheService.SetProducts(subCategoryId, products);
             }
 
             loading = false;

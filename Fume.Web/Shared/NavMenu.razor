@@ -1,6 +1,8 @@
 @inject IRepository repository
 @inject NavigationManager navigationManager
 @inject Fume.Web.Services.CatalogNavigationService catalogNavigation
+@inject Fume.Web.Services.CatalogCacheService cacheService
+@inject AuthenticationStateProvider authenticationStateProvider
 
 <style>
     :deep .mud-nav-group {
@@ -101,9 +103,8 @@
                         <MudSkeleton SkeletonType="SkeletonType.Text" Width="70%" />
                     </div>
                 }
-                else if (subCategoriesByCategory.ContainsKey(category.Id))
+                else if (cacheService.TryGetSubCategories(category.Id, out var subCategories) && subCategories != null)
                 {
-                    var subCategories = subCategoriesByCategory[category.Id];
                     @if (subCategories.Any())
                     {
                         @foreach (var subCategory in subCategories)
@@ -158,12 +159,26 @@
     private List<Category>? categories;
     private HashSet<int> prefetchedSubCategories = new HashSet<int>();
     private bool isLoading = true;
-    private Dictionary<int, List<SubCategory>> subCategoriesByCategory = new Dictionary<int, List<SubCategory>>();
     private HashSet<int> loadingSubCategories = new HashSet<int>();
+    private string? currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
+        // Verificar si cambió el usuario y limpiar cache si es necesario
+        await CheckUserAndClearCache();
         await LoadCategoriesAsync();
+    }
+
+    private async Task CheckUserAndClearCache()
+    {
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var newUserId = user.Identity?.IsAuthenticated == true
+            ? user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            : null;
+
+        cacheService.CheckAndClearIfUserChanged(newUserId);
+        currentUserId = newUserId;
     }
 
     private async Task OnCategoryExpandedChanged(Category category, bool expanded)
@@ -173,14 +188,14 @@
 
         if (expanded)
         {
-            // Cargar subcategorías si no están en cache
-            if (!subCategoriesByCategory.ContainsKey(category.Id))
+            // Cargar subcategorías si no están en cache compartido
+            if (!cacheService.TryGetSubCategories(category.Id, out _))
             {
                 await LoadSubCategoriesForCategory(category.Id);
             }
 
             // Hacer prefetch de productos solo cuando se expande (no en hover)
-            if (subCategoriesByCategory.TryGetValue(category.Id, out var subCategories))
+            if (cacheService.TryGetSubCategories(category.Id, out var subCategories) && subCategories != null)
             {
                 foreach (var subCategory in subCategories)
                 {
@@ -204,16 +219,16 @@
             var response = await repository.Get<List<SubCategory>>($"/api/subcategories/bycategory/{categoryId}");
             if (!response.Error && response.Response != null)
             {
-                subCategoriesByCategory[categoryId] = response.Response;
+                cacheService.SetSubCategories(categoryId, response.Response);
             }
             else
             {
-                subCategoriesByCategory[categoryId] = new List<SubCategory>();
+                cacheService.SetSubCategories(categoryId, new List<SubCategory>());
             }
         }
         catch
         {
-            subCategoriesByCategory[categoryId] = new List<SubCategory>();
+            cacheService.SetSubCategories(categoryId, new List<SubCategory>());
         }
         finally
         {
@@ -303,11 +318,21 @@
         try
         {
             isLoading = true;
+
+            // Verificar si ya tenemos categorías en cache
+            if (cacheService.Categories != null)
+            {
+                categories = cacheService.Categories;
+                isLoading = false;
+                return;
+            }
+
             // Usar el endpoint ligero que solo trae categorías sin subcategorías
             var response = await repository.Get<List<Category>>("/api/categories/light?RecordsNumber=100");
             if (!response.Error)
             {
                 categories = response.Response;
+                cacheService.Categories = categories;
             }
             else
             {
