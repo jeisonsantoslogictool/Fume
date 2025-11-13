@@ -92,7 +92,7 @@
             <MudNavGroup Class="category-nav-group"
                          Title="@category.Name"
                          Icon="@GetCategoryIcon(category.Icon)"
-                         IconColor="Color.Primary"
+                         IconColor="Color.Info"
                          Expanded="@category.IsExpanded"
                          ExpandedChanged="@(async (bool expanded) => await OnCategoryExpandedChanged(category, expanded))">
                 @if (loadingSubCategories.Contains(category.Id))
