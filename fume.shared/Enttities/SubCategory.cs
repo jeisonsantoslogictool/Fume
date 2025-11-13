@@ -34,5 +34,9 @@ namespace fume.shared.Enttities
         // Propiedad calculada para saber si tiene imagen (sin traer los bytes)
         [System.ComponentModel.DataAnnotations.Schema.NotMapped]
         public bool HasImage { get; set; }
+
+        // Propiedad para invalidar caché de imágenes (solo cliente, no se guarda)
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public long ImageModifiedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     }
 }

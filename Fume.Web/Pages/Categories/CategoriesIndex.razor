@@ -829,9 +829,14 @@ else
     {
         if (categoryEditRef != null)
         {
-            await categoryEditRef.EditAsync();
+            var success = await categoryEditRef.EditAsync();
+            // Solo cerrar después de que EditAsync() se haya completado exitosamente
+            if (success)
+            {
+                await modalEdit?.HideAsync();
+                await LoadAsync();
+            }
         }
-        await OnHideEditModalClick();
     }
 
     private async Task OnSubCategoryCreateSuccess()
@@ -939,9 +944,15 @@ else
     {
         if (subCategoryEditRef != null)
         {
-            await subCategoryEditRef.EditAsync();
+            var success = await subCategoryEditRef.EditAsync();
+            // Solo cerrar después de que EditAsync() se haya completado exitosamente
+            if (success)
+            {
+                await modalEditSubCategory?.HideAsync();
+                await LoadAsync();
+                await LoadSubCategoriesAsync();
+            }
         }
-        await OnHideEditSubCategoryModalClick();
     }
 
     private async Task SelectedPageAsync(int page)

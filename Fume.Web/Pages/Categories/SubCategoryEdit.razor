@@ -275,29 +275,29 @@ else
         }
     }
 
-    public async Task EditAsync()
+    public async Task<bool> EditAsync()
     {
         if (subCategoryDTO is null)
         {
-            return;
+            return false;
         }
 
         if (subCategoryDTO.CategoryId == 0)
         {
             await sweetAlertService.FireAsync("Error", "Debe seleccionar una categoría.", SweetAlertIcon.Error);
-            return;
+            return false;
         }
 
         if (string.IsNullOrWhiteSpace(subCategoryDTO.Name))
         {
             await sweetAlertService.FireAsync("Error", "El nombre de la subcategoría es obligatorio.", SweetAlertIcon.Error);
-            return;
+            return false;
         }
 
         if (subCategoryDTO.Name.Length > 100)
         {
             await sweetAlertService.FireAsync("Error", "El nombre de la subcategoría no puede exceder 100 caracteres.", SweetAlertIcon.Error);
-            return;
+            return false;
         }
 
         isLoading = true;
@@ -310,10 +310,11 @@ else
             {
                 var message = await responseHttp.GetErrorMessageAsync();
                 await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-                return;
+                return false;
             }
 
             await sweetAlertService.FireAsync("Éxito", "Subcategoría actualizada exitosamente", SweetAlertIcon.Success);
+            return true;
         }
         finally
         {

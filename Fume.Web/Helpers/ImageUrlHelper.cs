@@ -9,7 +9,7 @@ namespace Fume.Web.Helpers
             // Solo generar URL si tiene imagen
             if (category.HasImage && category.Id > 0)
             {
-                return $"{BaseUrl}/api/images/categories/{category.Id}";
+                return $"{BaseUrl}/api/images/categories/{category.Id}?v={category.ImageModifiedAt}";
             }
 
             return "/images/no-image.png";
@@ -20,7 +20,7 @@ namespace Fume.Web.Helpers
             // Solo generar URL si tiene imagen
             if (subCategory.HasImage && subCategory.Id > 0)
             {
-                return $"{BaseUrl}/api/images/subcategories/{subCategory.Id}";
+                return $"{BaseUrl}/api/images/subcategories/{subCategory.Id}?v={subCategory.ImageModifiedAt}";
             }
 
             return "/images/no-image.png";

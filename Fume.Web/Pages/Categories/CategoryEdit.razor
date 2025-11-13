@@ -306,12 +306,12 @@ else
         }
     }
 
-    public async Task EditAsync()
+    public async Task<bool> EditAsync()
     {
         if (categoryDTO is null || string.IsNullOrWhiteSpace(categoryDTO.Name))
         {
             await sweetAlertService.FireAsync("Error", "El nombre de la categoría es obligatorio.", SweetAlertIcon.Error);
-            return;
+            return false;
         }
 
         isLoading = true;
@@ -324,11 +324,11 @@ else
             {
                 var message = await responseHttp.GetErrorMessageAsync();
                 await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-                return;
+                return false;
             }
 
             await sweetAlertService.FireAsync("Éxito", "Categoría actualizada exitosamente", SweetAlertIcon.Success);
-
+            return true;
         }
         finally
         {

@@ -17,7 +17,7 @@ namespace fume.api.Controllers
 
         [HttpGet("categories/{id:int}")]
         [ResponseCache(Duration = 3600)] // Cache por 1 hora
-        public async Task<IActionResult> GetCategoryImage(int id)
+        public async Task<IActionResult> GetCategoryImage(int id, [FromQuery] long? v = null)
         {
             var category = await _context.categories
                 .AsNoTracking()
@@ -33,7 +33,7 @@ namespace fume.api.Controllers
 
         [HttpGet("subcategories/{id:int}")]
         [ResponseCache(Duration = 3600)] // Cache por 1 hora
-        public async Task<IActionResult> GetSubCategoryImage(int id)
+        public async Task<IActionResult> GetSubCategoryImage(int id, [FromQuery] long? v = null)
         {
             var subCategory = await _context.SubCategories
                 .AsNoTracking()
