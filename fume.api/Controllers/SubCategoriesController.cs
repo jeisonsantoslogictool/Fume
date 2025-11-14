@@ -17,11 +17,21 @@ namespace fume.api.Controllers
     {
         private readonly DataContext _context;
         private readonly IMemoryCache _cache;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SubCategoriesController(DataContext context, IMemoryCache cache)
+        public SubCategoriesController(DataContext context, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _cache = cache;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        private string GetImageUrl(string path, int id, long? timestamp = null)
+        {
+            var request = _httpContextAccessor.HttpContext?.Request;
+            var baseUrl = $"{request?.Scheme}://{request?.Host}";
+            var vParam = timestamp.HasValue ? $"?v={timestamp}" : "";
+            return $"{baseUrl}/api/images/{path}/{id}{vParam}";
         }
 
         [HttpGet]
@@ -49,6 +59,7 @@ namespace fume.api.Controllers
                     CategoryId_FK = x.Category.Id,
                     CategoryName = x.Category.Name,
                     x.ImageUrl,
+                    x.ImageModifiedAt,
                     ImageLength = x.Image != null ? x.Image.Length : 0,
                     ProductSubCategoriesNumber = x.ProductSubCategories != null ? x.ProductSubCategories.Count : 0
                 })
@@ -67,9 +78,19 @@ namespace fume.api.Controllers
                 },
                 Image = null,
                 ImageUrl = x.ImageUrl,
+                ImageModifiedAt = x.ImageModifiedAt,
                 HasImage = x.ImageLength > 0,
                 ProductSubCategories = new List<ProductSubCategory>(new ProductSubCategory[x.ProductSubCategoriesNumber])
             }).ToList();
+
+            // Generar URLs dinámicas para las imágenes
+            foreach (var subCategory in result)
+            {
+                if (string.IsNullOrEmpty(subCategory.ImageUrl) && subCategory.HasImage)
+                {
+                    subCategory.ImageUrl = GetImageUrl("subcategories", subCategory.Id, subCategory.ImageModifiedAt);
+                }
+            }
 
             return Ok(result);
         }
@@ -113,6 +134,16 @@ namespace fume.api.Controllers
                 return NotFound();
             }
 
+            // Calcular HasImage y limpiar bytes
+            subCategory.HasImage = subCategory.Image != null && subCategory.Image.Length > 0;
+            subCategory.Image = null;
+
+            // Generar URL dinámica si no tiene
+            if (string.IsNullOrEmpty(subCategory.ImageUrl) && subCategory.HasImage)
+            {
+                subCategory.ImageUrl = GetImageUrl("subcategories", subCategory.Id, subCategory.ImageModifiedAt);
+            }
+
             return Ok(subCategory);
         }
 
@@ -132,6 +163,14 @@ namespace fume.api.Controllers
 
             if (_cache.TryGetValue(cacheKey, out List<SubCategory>? cachedSubCategories))
             {
+                // Generar URLs para datos cacheados también
+                foreach (var subCategory in cachedSubCategories)
+                {
+                    if (string.IsNullOrEmpty(subCategory.ImageUrl) && subCategory.HasImage)
+                    {
+                        subCategory.ImageUrl = GetImageUrl("subcategories", subCategory.Id, subCategory.ImageModifiedAt);
+                    }
+                }
                 return Ok(cachedSubCategories);
             }
 
@@ -146,6 +185,7 @@ namespace fume.api.Controllers
                     x.Name,
                     x.CategoryId,
                     x.ImageUrl,
+                    x.ImageModifiedAt,
                     ImageLength = x.Image != null ? x.Image.Length : 0,
                     ProductSubCategoriesNumber = x.ProductSubCategories != null ? x.ProductSubCategories.Count : 0
                 })
@@ -158,10 +198,20 @@ namespace fume.api.Controllers
                 Name = x.Name,
                 CategoryId = x.CategoryId,
                 ImageUrl = x.ImageUrl,
+                ImageModifiedAt = x.ImageModifiedAt,
                 Image = null,
                 HasImage = x.ImageLength > 0,
                 ProductSubCategories = new List<ProductSubCategory>(new ProductSubCategory[x.ProductSubCategoriesNumber])
             }).ToList();
+
+            // Generar URLs dinámicas para las imágenes
+            foreach (var subCategory in result)
+            {
+                if (string.IsNullOrEmpty(subCategory.ImageUrl) && subCategory.HasImage)
+                {
+                    subCategory.ImageUrl = GetImageUrl("subcategories", subCategory.Id, subCategory.ImageModifiedAt);
+                }
+            }
 
             // Guardar en cache por 10 minutos
             var cacheOptions = new MemoryCacheEntryOptions

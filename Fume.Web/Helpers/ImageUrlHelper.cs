@@ -2,39 +2,61 @@ namespace Fume.Web.Helpers
 {
     public static class ImageUrlHelper
     {
-        private const string BaseUrl = "https://localhost:7181";
+        private const string FallbackImage = "/images/no-image.png";
 
         public static string GetCategoryImageUrl(fume.shared.Enttities.Category category)
         {
-            // Solo generar URL si tiene imagen
-            if (category.HasImage && category.Id > 0)
+            // Usar la URL directamente si está disponible
+            if (!string.IsNullOrEmpty(category.ImageUrl))
             {
-                return $"{BaseUrl}/api/images/categories/{category.Id}?v={category.ImageModifiedAt}";
+                return category.ImageUrl;
             }
 
-            return "/images/no-image.png";
+            // Fallback: si tiene imagen pero no URL (datos legacy)
+            if (category.HasImage)
+            {
+                // Esto se puede eliminar después de migrar todas las imágenes
+                return $"data:image/png;base64,{category.ImageString}";
+            }
+
+            return FallbackImage;
         }
 
         public static string GetSubCategoryImageUrl(fume.shared.Enttities.SubCategory subCategory)
         {
-            // Solo generar URL si tiene imagen
-            if (subCategory.HasImage && subCategory.Id > 0)
+            // Usar la URL directamente si está disponible
+            if (!string.IsNullOrEmpty(subCategory.ImageUrl))
             {
-                return $"{BaseUrl}/api/images/subcategories/{subCategory.Id}?v={subCategory.ImageModifiedAt}";
+                return subCategory.ImageUrl;
             }
 
-            return "/images/no-image.png";
+            // Fallback: si tiene imagen pero no URL (datos legacy)
+            if (subCategory.HasImage)
+            {
+                // Esto se puede eliminar después de migrar todas las imágenes
+                return $"data:image/png;base64,{subCategory.ImageString}";
+            }
+
+            return FallbackImage;
         }
 
         public static string GetProductImageUrl(fume.shared.Enttities.ProductImage productImage)
         {
-            // Para productos, siempre intentamos cargar la URL si tiene ID
-            if (productImage.Id > 0)
+            // Usar la URL directamente si está disponible
+            if (!string.IsNullOrEmpty(productImage.ImageUrl))
             {
-                return $"{BaseUrl}/api/images/products/{productImage.Id}";
+                return productImage.ImageUrl;
             }
 
-            return "/images/no-image.png";
+            // Fallback: si tiene imagen en bytes (datos legacy)
+            if (productImage.Imagefile != null && productImage.Imagefile.Length > 0)
+            {
+                // Esto se puede eliminar después de migrar todas las imágenes
+                var base64 = Convert.ToBase64String(productImage.Imagefile);
+                return $"data:image/png;base64,{base64}";
+            }
+
+            return FallbackImage;
         }
     }
 }

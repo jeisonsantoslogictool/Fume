@@ -18,11 +18,21 @@ namespace fume.api.Controllers
     {
         private readonly DataContext _context;
         private readonly IMemoryCache _cache;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CategoriesController(DataContext context, IMemoryCache cache)
+        public CategoriesController(DataContext context, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _cache = cache;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        private string GetImageUrl(string path, int id, long? timestamp = null)
+        {
+            var request = _httpContextAccessor.HttpContext?.Request;
+            var baseUrl = $"{request?.Scheme}://{request?.Host}";
+            var vParam = timestamp.HasValue ? $"?v={timestamp}" : "";
+            return $"{baseUrl}/api/images/{path}/{id}{vParam}";
         }
 
 
@@ -50,6 +60,7 @@ namespace fume.api.Controllers
                         x.Name,
                         x.Icon,
                         x.ImageUrl,
+                        x.ImageModifiedAt,
                         ImageLength = x.Image != null ? x.Image.Length : 0, // Solo traer la longitud
                         SubCategoriesNumber = x.SubCategories != null ? x.SubCategories.Count : 0,
                         ProductCategoriesNumber = x.ProductCategories != null ? x.ProductCategories.Count : 0
@@ -63,11 +74,15 @@ namespace fume.api.Controllers
                     Name = x.Name,
                     Icon = x.Icon,
                     ImageUrl = x.ImageUrl,
+                    ImageModifiedAt = x.ImageModifiedAt,
                     Image = null,
                     HasImage = x.ImageLength > 0,
                     SubCategories = new List<SubCategory>(new SubCategory[x.SubCategoriesNumber]), // Para que el contador funcione
                     ProductCategories = new List<ProductCategory>(new ProductCategory[x.ProductCategoriesNumber]) // Para que el contador funcione
                 }).ToList();
+
+                // Generar URLs dinámicas para las imágenes
+                PopulateImageUrls(result);
 
                 return Ok(result);
             }
@@ -109,19 +124,37 @@ namespace fume.api.Controllers
                     queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
                 }
 
-                var categories = await queryable
+                // Dos pasos: primero traer datos con conteo, luego mapear
+                var tempResult = await queryable
                     .OrderBy(x => x.Name)
                     .Paginate(pagination)
-                    .Select(x => new Category
+                    .Select(x => new
                     {
-                        Id = x.Id,
-                        Name = x.Name,
-                        Icon = x.Icon,
-                        ImageUrl = x.ImageUrl,
-                        HasImage = x.Image != null && x.Image.Length > 0,
-                        Image = null
+                        x.Id,
+                        x.Name,
+                        x.Icon,
+                        x.ImageUrl,
+                        x.ImageModifiedAt,
+                        ImageLength = x.Image != null ? x.Image.Length : 0,
+                        SubCategoriesCount = x.SubCategories != null ? x.SubCategories.Count : 0
                     })
                     .ToListAsync();
+
+                // Mapear a Category con SubCategories inicializada para que SubCategoriesNumber funcione
+                var categories = tempResult.Select(x => new Category
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Icon = x.Icon,
+                    ImageUrl = x.ImageUrl,
+                    HasImage = x.ImageLength > 0,
+                    ImageModifiedAt = x.ImageModifiedAt,
+                    Image = null,
+                    SubCategories = new List<SubCategory>(new SubCategory[x.SubCategoriesCount]) // Para que el contador funcione
+                }).ToList();
+
+                // Generar URLs dinámicas para las imágenes
+                PopulateImageUrls(categories);
 
                 // Guardar en cache por 10 minutos
                 var cacheOptions = new MemoryCacheEntryOptions
@@ -160,6 +193,8 @@ namespace fume.api.Controllers
                 // Intentar obtener del cache
                 if (_cache.TryGetValue(cacheKey, out List<Category>? cachedCategories))
                 {
+                    // Generar URLs para los datos cacheados también
+                    PopulateImageUrls(cachedCategories);
                     return Ok(cachedCategories);
                 }
 
@@ -178,7 +213,7 @@ namespace fume.api.Controllers
                     .Paginate(pagination)
                     .ToListAsync();
 
-                // Limpiar las imágenes para no enviar los bytes
+                // Limpiar las imágenes para no enviar los bytes y generar URLs
                 foreach (var category in categories)
                 {
                     category.HasImage = category.Image != null && category.Image.Length > 0;
@@ -194,6 +229,9 @@ namespace fume.api.Controllers
                         }
                     }
                 }
+
+                // Generar URLs
+                PopulateImageUrls(categories);
 
                 // Guardar en cache por 10 minutos
                 var cacheOptions = new MemoryCacheEntryOptions
@@ -242,14 +280,19 @@ namespace fume.api.Controllers
             }
 
             category.HasImage = category.Image != null && category.Image.Length > 0;
+            category.Image = null; // Limpiar bytes
 
             if (category.SubCategories != null)
             {
                 foreach (var subCategory in category.SubCategories)
                 {
                     subCategory.HasImage = subCategory.Image != null && subCategory.Image.Length > 0;
+                    subCategory.Image = null; // Limpiar bytes
                 }
             }
+
+            // Generar URLs dinámicas
+            PopulateImageUrls(new List<Category> { category });
 
             return Ok(category);
         }
@@ -399,6 +442,33 @@ namespace fume.api.Controllers
             // Actualizar el timestamp invalida efectivamente todas las claves de cache anteriores
             // ya que las nuevas solicitudes usarán un timestamp diferente en la clave
             _cache.Set("categories_cache_timestamp", DateTime.UtcNow);
+        }
+
+        private void PopulateImageUrls(List<Category> categories)
+        {
+            foreach (var category in categories)
+            {
+                // Generar URL si no tiene y tiene imagen
+                if (string.IsNullOrEmpty(category.ImageUrl) && category.HasImage)
+                {
+                    category.ImageUrl = GetImageUrl("categories", category.Id, category.ImageModifiedAt);
+                }
+
+                if (category.SubCategories != null)
+                {
+                    foreach (var subCategory in category.SubCategories)
+                    {
+                        // Saltar subcategorías nulas (placeholders para conteo)
+                        if (subCategory == null) continue;
+
+                        // Generar URL si no tiene y tiene imagen
+                        if (string.IsNullOrEmpty(subCategory.ImageUrl) && subCategory.HasImage)
+                        {
+                            subCategory.ImageUrl = GetImageUrl("subcategories", subCategory.Id, subCategory.ImageModifiedAt);
+                        }
+                    }
+                }
+            }
         }
     }
 }

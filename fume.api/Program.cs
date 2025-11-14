@@ -35,6 +35,9 @@ builder.Services.AddCors(options =>
 // Agregar Memory Cache para optimización
 builder.Services.AddMemoryCache();
 
+// Agregar HttpContextAccessor para generar URLs dinámicas
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

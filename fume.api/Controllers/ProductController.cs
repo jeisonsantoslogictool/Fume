@@ -16,11 +16,20 @@ namespace fume.api.Controllers
     {
         private readonly DataContext _context;
         private readonly IFileStorage _fileStorage;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProductController(DataContext context, IFileStorage fileStorage)
+        public ProductController(DataContext context, IFileStorage fileStorage, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _fileStorage = fileStorage;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        private string GetImageUrl(string path, int id)
+        {
+            var request = _httpContextAccessor.HttpContext?.Request;
+            var baseUrl = $"{request?.Scheme}://{request?.Host}";
+            return $"{baseUrl}/api/images/{path}/{id}";
         }
 
         [HttpGet]
@@ -36,27 +45,49 @@ namespace fume.api.Controllers
                 queryable = queryable.Where(x => x.Name.ToLower().Contains(pagination.Filter.ToLower()));
             }
 
-            var products = await queryable
+            // Primero obtener con información de si tiene imagen
+            var tempProducts = await queryable
                 .OrderBy(x => x.Name)
                 .Paginate(pagination)
-                .Select(x => new Product
+                .Select(x => new
                 {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Description = x.Description,
-                    Price = x.Price,
-                    Stock = x.Stock,
+                    x.Id,
+                    x.Name,
+                    x.Description,
+                    x.Price,
+                    x.Stock,
                     ProductCategories = x.ProductCategories,
                     ProductSubCategories = x.ProductSubCategories,
-                    ProductImages = x.ProductImages.Select(img => new ProductImage
+                    ProductImages = x.ProductImages.Select(img => new
                     {
-                        Id = img.Id,
-                        ProductId = img.ProductId,
-                        Imagefile = null, // No traer los bytes de la imagen
-                        ImageUrl = img.ImageUrl
+                        img.Id,
+                        img.ProductId,
+                        img.ImageUrl,
+                        HasImage = img.Imagefile != null && img.Imagefile.Length > 0
                     }).ToList()
                 })
                 .ToListAsync();
+
+            // Mapear a Product con URLs generadas
+            var products = tempProducts.Select(x => new Product
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Description = x.Description,
+                Price = x.Price,
+                Stock = x.Stock,
+                ProductCategories = x.ProductCategories,
+                ProductSubCategories = x.ProductSubCategories,
+                ProductImages = x.ProductImages.Select(img => new ProductImage
+                {
+                    Id = img.Id,
+                    ProductId = img.ProductId,
+                    Imagefile = null,
+                    ImageUrl = !string.IsNullOrEmpty(img.ImageUrl)
+                        ? img.ImageUrl
+                        : (img.HasImage ? GetImageUrl("products", img.Id) : null)
+                }).ToList()
+            }).ToList();
 
             return Ok(products);
         }
@@ -313,26 +344,46 @@ namespace fume.api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult> GetBySubcategoryAsync(int subcategoryId)
         {
-            var products = await _context.Products
-                .AsNoTracking() // No rastrear cambios = más rápido
+            // Primero obtener con información de si tiene imagen
+            var tempProducts = await _context.Products
+                .AsNoTracking()
                 .Where(x => x.ProductSubCategories!.Any(ps => ps.SubCategoryId == subcategoryId))
                 .OrderBy(x => x.Name)
-                .Select(x => new Product
+                .Select(x => new
                 {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Description = x.Description,
-                    Price = x.Price,
-                    Stock = x.Stock,
-                    ProductImages = x.ProductImages.Select(img => new ProductImage
+                    x.Id,
+                    x.Name,
+                    x.Description,
+                    x.Price,
+                    x.Stock,
+                    ProductImages = x.ProductImages.Select(img => new
                     {
-                        Id = img.Id,
-                        ProductId = img.ProductId,
-                        Imagefile = null, // No traer los bytes de la imagen
-                        ImageUrl = img.ImageUrl
+                        img.Id,
+                        img.ProductId,
+                        img.ImageUrl,
+                        HasImage = img.Imagefile != null && img.Imagefile.Length > 0
                     }).ToList()
                 })
                 .ToListAsync();
+
+            // Mapear a Product con URLs generadas
+            var products = tempProducts.Select(x => new Product
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Description = x.Description,
+                Price = x.Price,
+                Stock = x.Stock,
+                ProductImages = x.ProductImages.Select(img => new ProductImage
+                {
+                    Id = img.Id,
+                    ProductId = img.ProductId,
+                    Imagefile = null,
+                    ImageUrl = !string.IsNullOrEmpty(img.ImageUrl)
+                        ? img.ImageUrl
+                        : (img.HasImage ? GetImageUrl("products", img.Id) : null)
+                }).ToList()
+            }).ToList();
 
             return Ok(products);
         }

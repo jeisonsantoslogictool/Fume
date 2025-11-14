@@ -12,7 +12,7 @@ namespace Fume.Web.Services
         private const string PRODUCTS_PREFIX = "fume_prod_";
         private const string USER_ID_KEY = "fume_user_id";
         private const string CACHE_VERSION_KEY = "fume_cache_version";
-        private const string CACHE_VERSION = "1.0"; // Incrementar para invalidar cache antiguo
+        private const string CACHE_VERSION = "2.0"; // v2.0: URLs dinámicas incluidas en responses
 
         // Eventos para notificar cambios
         public event Action? OnCacheCleared;
