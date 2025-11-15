@@ -197,9 +197,12 @@ else
                     <MudItem xs="12" lg="6">
                         <div class="user-card">
                             <div class="user-info">
-                                @if (user.Photo != null && user.Photo.Length > 0)
+                                @{
+                                    var photoUrl = ImageUrlHelper.GetUserPhotoUrl(user.Id, user.HasPhoto);
+                                }
+                                @if (!string.IsNullOrEmpty(photoUrl))
                                 {
-                                    <img src="data:image/jpeg;base64,@Convert.ToBase64String(user.Photo)"
+                                    <img src="@photoUrl"
                                          alt="@user.FullName"
                                          class="user-avatar" />
                                 }
@@ -387,8 +390,8 @@ else
 }
 
 @code {
-    private List<User>? users { get; set; }
-    private List<User>? filteredUsers { get; set; }
+    private List<UserListDTO>? users { get; set; }
+    private List<UserListDTO>? filteredUsers { get; set; }
     private bool loading = true;
 
     private string _filter = "";
@@ -415,7 +418,7 @@ else
     private async Task LoadAsync()
     {
         loading = true;
-        var responseHttp = await repository.Get<List<User>>("/api/accounts/GetAll");
+        var responseHttp = await repository.Get<List<UserListDTO>>("/api/accounts/GetAll");
 
         if (responseHttp.Error)
         {

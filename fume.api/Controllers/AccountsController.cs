@@ -93,6 +93,19 @@ namespace fume.api.Controllers
             return Ok(await _userHelper.GetUserAsync(email));
         }
 
+        [HttpGet("photo/{userId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUserPhoto(string userId)
+        {
+            var user = await _userHelper.GetUserByIdAsync(userId);
+            if (user == null || user.Photo == null || user.Photo.Length == 0)
+            {
+                return NotFound();
+            }
+
+            return File(user.Photo, "image/jpeg");
+        }
+
 
         [HttpPost("CreateUser")]
         public async Task<ActionResult> CreateUser([FromBody] UserDTO model)
@@ -125,7 +138,24 @@ namespace fume.api.Controllers
         public async Task<ActionResult> GetAll()
         {
             var users = await _userHelper.GetAllUsersAsync();
-            return Ok(users);
+
+            // Mapear usuarios a un DTO ligero sin los bytes de la foto
+            var usersDto = users.Select(u => new UserListDTO
+            {
+                Id = u.Id,
+                Document = u.Document,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Email = u.Email,
+                PhoneNumber = u.PhoneNumber,
+                Address = u.Address,
+                UserType = u.UserType,
+                CityId = u.CityId,
+                City = u.City,
+                HasPhoto = u.Photo != null && u.Photo.Length > 0
+            }).ToList();
+
+            return Ok(usersDto);
         }
 
         [HttpDelete("{id}")]
