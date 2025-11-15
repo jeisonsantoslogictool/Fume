@@ -51,42 +51,20 @@
         width: 400px;
     }
 
-    .smart-search {
-        position: relative;
-        width: 100%;
-    }
-
-    .smart-search input {
-        width: 100%;
-        padding: 12px 50px 12px 20px;
-        border: 2px solid #e0e0e0;
+    .search-section :deep .mud-input-root {
         border-radius: 25px;
-        font-size: 16px;
-        transition: all 0.3s ease;
     }
 
-    .smart-search input:focus {
-        outline: none;
-        border-color: #25b09b;
-        box-shadow: 0 0 10px rgba(37, 176, 155, 0.2);
+    .search-section :deep .mud-input-outlined {
+        border-radius: 25px;
     }
 
-    .smart-search button {
-        position: absolute;
-        right: 5px;
-        top: 50%;
-        transform: translateY(-50%);
-        background-color: #1b70b3;
-        border: none;
-        border-radius: 20px;
-        padding: 8px 20px;
-        color: white;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
+    .search-section :deep .mud-input-outlined .mud-input-root {
+        border-radius: 25px;
     }
 
-    .smart-search button:hover {
-        background-color: #1e9382;
+    .search-section :deep .mud-input {
+        border-radius: 25px;
     }
 
     .cart-section {
@@ -438,16 +416,30 @@
 <div class="header-section">
     <div class="header-container">
         <div class="search-section">
-            <div class="smart-search">
+            <div class="input-group">
+                <span class="input-group-text" style="background: white; border-right: none; border-radius: 25px 0 0 25px;">
+                    <i class="oi oi-magnifying-glass"></i>
+                </span>
                 <input type="text"
+                       class="form-control"
                        placeholder="Buscar productos..."
-                       @bind-value="Filter"
-                       @onkeyup="HandleKeyPress" />
-                <button @onclick="SearchProducts">
-                    <i class="oi oi-magnifying-glass"></i> Buscar
-                </button>
+                       @bind-value="_filter"
+                       @bind-value:event="oninput"
+                       style="border-left: none; border-right: none; box-shadow: none;" />
+                @if (!string.IsNullOrWhiteSpace(_filter))
+                {
+                    <span class="input-group-text"
+                          style="background: white; border-left: none; border-radius: 0 25px 25px 0; cursor: pointer;"
+                          @onclick="ClearSearch">
+                        <i class="oi oi-x"></i>
+                    </span>
+                }
+                else
+                {
+                    <span class="input-group-text" style="background: white; border-left: none; border-radius: 0 25px 25px 0;">
+                    </span>
+                }
             </div>
-
         </div>
 
         <div class="cart-section">
@@ -767,9 +759,43 @@ else
     [Parameter]
     public int? SubCategoryId { get; set; }
 
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public string Filter { get; set; } = "";
+    private string _filterValue = "";
+    private System.Threading.Timer? _searchTimer;
+
+    private string _filter
+    {
+        get => _filterValue;
+        set
+        {
+            _filterValue = value;
+
+            // Cancelar el timer anterior
+            _searchTimer?.Dispose();
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                // Si el filtro está vacío, volver inmediatamente a categorías
+                _searchTimer = null;
+                InvokeAsync(async () =>
+                {
+                    await LoadCategoriesViewAsync();
+                    StateHasChanged();
+                });
+            }
+            else
+            {
+                // Crear un nuevo timer que se ejecutará después de 500ms
+                _searchTimer = new System.Threading.Timer(_ =>
+                {
+                    InvokeAsync(async () =>
+                    {
+                        await SearchProductsAsync();
+                        StateHasChanged();
+                    });
+                }, null, 500, System.Threading.Timeout.Infinite);
+            }
+        }
+    }
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
@@ -825,13 +851,7 @@ else
 
     private async Task LoadAllProductsFromLocalStorage()
     {
-        // Pre-cargar productos guardados en localStorage al iniciar
-        // Esto mejora el rendimiento al tener todo en memoria
-        // (solo leer localStorage una vez al inicio, no durante navegación)
-
-        // Nota: Por ahora no pre-cargamos todos los productos porque no sabemos qué IDs existen
-        // Los productos se cargarán bajo demanda y se guardarán en memoria
-        // Esta estructura permite expandir el pre-cargado en el futuro si es necesario
+       
         await Task.CompletedTask;
     }
 
@@ -857,7 +877,7 @@ else
             await LoadSubCategoriesByCategoryIdAsync(CategoryId.Value);
         }
         // Si no hay parámetros, mostrar categorías
-        else if (string.IsNullOrWhiteSpace(Filter))
+        else
         {
             await LoadCategoriesViewAsync();
         }
@@ -868,6 +888,9 @@ else
         // Desuscribirse de los eventos cuando el componente se destruye
         catalogNavigation.OnSubCategoryPrefetch -= HandleSubCategoryPrefetch;
         cartService.OnChange -= OnCartChanged;
+
+        // Limpiar el timer de búsqueda
+        _searchTimer?.Dispose();
     }
 
 
@@ -1131,15 +1154,17 @@ else
         navigationManager.NavigateTo($"/subcategory/{subCategory.Id}", forceLoad: false);
     }
 
-    private async Task SearchProducts()
+    private async Task SearchProductsAsync()
     {
-        if (string.IsNullOrWhiteSpace(Filter))
+        if (string.IsNullOrWhiteSpace(_filterValue))
         {
+            // Si el filtro está vacío, volver a la vista de categorías
+            await LoadCategoriesViewAsync();
             return;
         }
 
         loading = true;
-        var response = await repository.Get<List<Product>>($"/api/products?filter={Filter}");
+        var response = await repository.Get<List<Product>>($"/api/products?filter={_filterValue}");
 
         if (response.Error)
         {
@@ -1156,12 +1181,18 @@ else
         loading = false;
     }
 
-    private async Task HandleKeyPress(KeyboardEventArgs e)
+    private async Task ClearSearch()
     {
-        if (e.Key == "Enter")
-        {
-            await SearchProducts();
-        }
+        // Cancelar cualquier búsqueda pendiente
+        _searchTimer?.Dispose();
+        _searchTimer = null;
+
+        // Limpiar el filtro
+        _filterValue = string.Empty;
+
+        // Volver a la vista de categorías
+        await LoadCategoriesViewAsync();
+        StateHasChanged();
     }
 
     private async Task AddToCartAsync(int productId)

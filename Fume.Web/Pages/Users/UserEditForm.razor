@@ -1,0 +1,262 @@
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+
+@if (User is null)
+{
+    <div class="text-center py-4">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    </div>
+}
+else
+{
+    <EditForm Model="User" OnValidSubmit="UpdateAsync">
+        <DataAnnotationsValidator />
+
+        <MudGrid>
+            <!-- Campo oculto para asegurar que el ID se envíe -->
+            <input type="hidden" @bind-value="User.Id" />
+
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="User.FirstName"
+                              Label="Nombres"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              For="@(() => User.FirstName)" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="User.LastName"
+                              Label="Apellidos"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              For="@(() => User.LastName)" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="User.Document"
+                              Label="Documento"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              For="@(() => User.Document)" />
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudTextField @bind-Value="User.PhoneNumber"
+                              Label="Teléfono"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              For="@(() => User.PhoneNumber)" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="User.Email"
+                              Label="Correo Electrónico"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Email"
+                              Required="true"
+                              For="@(() => User.Email)" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="User.Address"
+                              Label="Dirección"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              For="@(() => User.Address)" />
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudSelect T="int"
+                           @bind-Value="selectedCountryId"
+                           Label="País"
+                           Variant="Variant.Outlined"
+                           AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem T="int" Value="0">-- Seleccione un país --</MudSelectItem>
+                    @if (countries != null)
+                    {
+                        @foreach (var country in countries)
+                        {
+                            <MudSelectItem T="int" Value="@country.Id">@country.Name</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudSelect T="int"
+                           @bind-Value="selectedStateId"
+                           Label="Estado/Departamento"
+                           Variant="Variant.Outlined"
+                           Disabled="@(selectedCountryId == 0)"
+                           AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem T="int" Value="0">-- Seleccione un estado --</MudSelectItem>
+                    @if (states != null)
+                    {
+                        @foreach (var state in states)
+                        {
+                            <MudSelectItem T="int" Value="@state.Id">@state.Name</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudSelect T="int"
+                           @bind-Value="User.CityId"
+                           Label="Ciudad"
+                           Variant="Variant.Outlined"
+                           Disabled="@(selectedStateId == 0)"
+                           AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem T="int" Value="0">-- Seleccione una ciudad --</MudSelectItem>
+                    @if (cities != null)
+                    {
+                        @foreach (var city in cities)
+                        {
+                            <MudSelectItem T="int" Value="@city.Id">@city.Name</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12">
+                <div class="mb-3">
+                    <label>Foto de Perfil:</label>
+                    <InputFile OnChange="OnPhotoChanged" class="form-control" accept="image/*" />
+                    @if (User.Photo != null && User.Photo.Length > 0)
+                    {
+                        <div class="mt-2">
+                            <img src="data:image/jpeg;base64,@Convert.ToBase64String(User.Photo)"
+                                 style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;"
+                                 alt="Foto de perfil" />
+                        </div>
+                    }
+                </div>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public User? User { get; set; }
+
+    private List<Country>? countries;
+    private List<State>? states;
+    private List<City>? cities;
+    private int selectedCountryId = 0;
+    private int selectedStateId = 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (User != null)
+        {
+            await LoadCountriesAsync();
+
+            if (User.City != null)
+            {
+                selectedCountryId = User.City.States?.CountryId ?? 0;
+                selectedStateId = User.City.StateId;
+
+                if (selectedCountryId > 0)
+                {
+                    await LoadStatesAsync(selectedCountryId);
+                }
+
+                if (selectedStateId > 0)
+                {
+                    await LoadCitiesAsync(selectedStateId);
+                }
+            }
+        }
+    }
+
+    private async Task LoadCountriesAsync()
+    {
+        var responseHttp = await repository.Get<List<Country>>("/api/countries/combo");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        countries = responseHttp.Response;
+    }
+
+    private async Task LoadStatesAsync(int countryId)
+    {
+        var responseHttp = await repository.Get<List<State>>($"/api/states/combo/{countryId}");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        states = responseHttp.Response;
+    }
+
+    private async Task LoadCitiesAsync(int stateId)
+    {
+        var responseHttp = await repository.Get<List<City>>($"/api/cities/combo/{stateId}");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        cities = responseHttp.Response;
+    }
+
+    private async Task OnPhotoChanged(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).ReadAsync(buffer);
+            User!.Photo = buffer;
+        }
+    }
+
+    public async Task<bool> UpdateAsync()
+    {
+        var responseHttp = await repository.Put("/api/accounts", User!);
+
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return false;
+        }
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+        {
+            Toast = true,
+            Position = SweetAlertPosition.BottomRight,
+            ShowConfirmButton = false,
+            Timer = 3000
+        });
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Usuario actualizado correctamente!");
+        return true;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (User != null && selectedCountryId > 0)
+        {
+            Task.Run(async () =>
+            {
+                await LoadStatesAsync(selectedCountryId);
+                StateHasChanged();
+            });
+        }
+
+        if (User != null && selectedStateId > 0)
+        {
+            Task.Run(async () =>
+            {
+                await LoadCitiesAsync(selectedStateId);
+                StateHasChanged();
+            });
+        }
+    }
+}

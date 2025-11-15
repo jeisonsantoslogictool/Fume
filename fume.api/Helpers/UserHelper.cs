@@ -52,6 +52,16 @@ namespace fume.api.Helpers
             return user!;
         }
 
+        public async Task<User> GetUserByIdAsync(string userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.City!)
+                .ThenInclude(c => c.States!)
+                .ThenInclude(s => s.country!)
+                .FirstOrDefaultAsync(x => x.Id == userId);
+            return user!;
+        }
+
         public async Task<User> GetUserAsync(Guid userId)
         {
             var user = await _context.Users
@@ -87,6 +97,35 @@ namespace fume.api.Helpers
         public async Task LogoutAsync()
         {
            await _signInManager.SignOutAsync();
+        }
+
+        public async Task<List<User>> GetAllUsersAsync()
+        {
+            return await _context.Users
+                .Include(u => u.City!)
+                .ThenInclude(c => c.States!)
+                .ThenInclude(s => s.country!)
+                .ToListAsync();
+        }
+
+        public async Task<IdentityResult> DeleteUserAsync(User user)
+        {
+            return await _userManager.DeleteAsync(user);
+        }
+
+        public async Task RemoveUserFromRoleAsync(User user, string roleName)
+        {
+            await _userManager.RemoveFromRoleAsync(user, roleName);
+        }
+
+        public async Task<string> GeneratePasswordResetTokenAsync(User user)
+        {
+            return await _userManager.GeneratePasswordResetTokenAsync(user);
+        }
+
+        public async Task<IdentityResult> ResetPasswordAsync(User user, string token, string newPassword)
+        {
+            return await _userManager.ResetPasswordAsync(user, token, newPassword);
         }
     }
 }

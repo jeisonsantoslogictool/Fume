@@ -1,6 +1,7 @@
 ﻿using fume.api.Helpers;
 using fume.shared.DTOs;
 using fume.shared.Enttities;
+using fume.shared.Enums;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -32,17 +33,35 @@ namespace fume.api.Controllers
         {
             try
             {
+                // Validar que el Id no esté vacío
+                if (string.IsNullOrWhiteSpace(user.Id))
+                {
+                    return BadRequest("El ID del usuario es requerido para actualizar");
+                }
+
                 if (user.Photo != null)
                 {
                     var photoUser = Convert.ToBase64String(user.Photo);
-                    
-                }
-                
 
-                var currentUser = await _userHelper.GetUserAsync(user.Email!);
+                }
+
+                // Buscar usuario por ID en lugar de email para permitir cambio de email
+                var currentUser = await _userHelper.GetUserByIdAsync(user.Id);
                 if (currentUser == null)
                 {
-                    return NotFound();
+                    return NotFound($"Usuario no encontrado con ID: {user.Id}");
+                }
+
+                // Verificar si el email cambió y si ya existe
+                if (currentUser.Email != user.Email)
+                {
+                    var existingUser = await _userHelper.GetUserAsync(user.Email!);
+                    if (existingUser != null)
+                    {
+                        return BadRequest("El correo electrónico ya está en uso por otro usuario");
+                    }
+                    currentUser.Email = user.Email;
+                    currentUser.UserName = user.Email; // UserName también debe actualizarse
                 }
 
                 currentUser.Document = user.Document;
@@ -99,6 +118,94 @@ namespace fume.api.Controllers
                 return Ok(BuildToken(user));
             }
             return BadRequest("Email o contraseña incorrectos.");
+        }
+
+        [HttpGet("GetAll")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<ActionResult> GetAll()
+        {
+            var users = await _userHelper.GetAllUsersAsync();
+            return Ok(users);
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<ActionResult> Delete(string id)
+        {
+            var user = await _userHelper.GetUserAsync(id);
+            if (user == null)
+            {
+                return NotFound("Usuario no encontrado");
+            }
+
+            var result = await _userHelper.DeleteUserAsync(user);
+            if (result.Succeeded)
+            {
+                return NoContent();
+            }
+
+            return BadRequest(result.Errors.FirstOrDefault());
+        }
+
+        [HttpPut("ChangeUserType/{email}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        public async Task<ActionResult> ChangeUserType(string email, [FromBody] UserType userType)
+        {
+            var user = await _userHelper.GetUserAsync(email);
+            if (user == null)
+            {
+                return NotFound("Usuario no encontrado");
+            }
+
+            var currentRole = user.UserType.ToString();
+            var newRole = userType.ToString();
+
+            await _userHelper.RemoveUserFromRoleAsync(user, currentRole);
+            await _userHelper.AddUserToRoleAsync(user, newRole);
+
+            user.UserType = userType;
+            var result = await _userHelper.UpdateUserAsync(user);
+
+            if (result.Succeeded)
+            {
+                return Ok(user);
+            }
+
+            return BadRequest(result.Errors.FirstOrDefault());
+        }
+
+        [HttpPost("ForgotPassword")]
+        public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDTO model)
+        {
+            var user = await _userHelper.GetUserAsync(model.Email);
+            if (user == null)
+            {
+                return Ok(new { Token = "", Message = "Si el correo existe, recibirás instrucciones para restablecer tu contraseña." });
+            }
+
+            var token = await _userHelper.GeneratePasswordResetTokenAsync(user);
+
+            // TODO: Enviar email con el token
+            // Por ahora, retornamos el token directamente (en producción esto debería ser un email)
+            return Ok(new { Token = token, Message = "Token generado correctamente" });
+        }
+
+        [HttpPost("ResetPassword")]
+        public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDTO model)
+        {
+            var user = await _userHelper.GetUserAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest("Usuario no encontrado");
+            }
+
+            var result = await _userHelper.ResetPasswordAsync(user, model.Token, model.Password);
+            if (result.Succeeded)
+            {
+                return Ok("Contraseña restablecida correctamente");
+            }
+
+            return BadRequest(result.Errors.FirstOrDefault()?.Description ?? "Error al restablecer la contraseña");
         }
         private TokenDTO BuildToken(User user)
         {

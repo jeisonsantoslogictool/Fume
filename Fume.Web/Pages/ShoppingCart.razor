@@ -479,19 +479,6 @@
                     <span>@FormatHelper.FormatPrice(Subtotal)</span>
                 </div>
 
-                <div class="summary-row">
-                    <span>Envío:</span>
-                    <span>@FormatHelper.FormatPrice(ShippingCost)</span>
-                </div>
-
-                @if (Tax > 0)
-                {
-                    <div class="summary-row">
-                        <span>IVA (19%):</span>
-                        <span>@FormatHelper.FormatPrice(Tax)</span>
-                    </div>
-                }
-
                 <div class="summary-row total">
                     <span>Total:</span>
                     <span class="amount">@FormatHelper.FormatPrice(Total)</span>
@@ -519,9 +506,7 @@
     private bool isUpdating = false;
 
     private decimal Subtotal => items?.Sum(i => i.Value) ?? 0;
-    private decimal ShippingCost => Subtotal > 0 ? (Subtotal >= 100000 ? 0 : 5000) : 0; // Envío gratis sobre $100k
-    private decimal Tax => Subtotal * 0.19m; // IVA 19%
-    private decimal Total => Subtotal + ShippingCost + Tax;
+    private decimal Total => Subtotal;
 
     protected override async Task OnInitializedAsync()
     {

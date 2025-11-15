@@ -1,0 +1,571 @@
+@page "/users"
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+@inject IJSRuntime JS
+@attribute [Authorize(Roles = "Admin")]
+
+<style>
+    .users-header {
+        background: linear-gradient(135deg, #3aa2f4 0%, #f0f8ff 100%);
+        padding: 32px;
+        border-radius: 16px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.25);
+    }
+
+    .users-title {
+        color: white;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .search-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+
+    .user-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e3f2fd;
+        transition: all 0.3s ease;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+
+    .user-card:hover {
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+        transform: translateY(-3px);
+        border-color: #667eea;
+    }
+
+    .user-info {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .user-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #667eea;
+    }
+
+    .user-avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .user-details {
+        flex: 1;
+    }
+
+    .user-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .user-email {
+        color: #6c757d;
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+    }
+
+    .user-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .badge-custom {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .badge-admin {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-user {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .user-actions {
+        padding: 15px 20px;
+        background: #f8f9fa;
+        border-top: 1px solid #e3f2fd;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    @@media (max-width: 768px) {
+        .users-header {
+            padding: 20px;
+        }
+
+        .users-title {
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .user-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+
+@if (loading)
+{
+    <div class="text-center py-5">
+        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+        <p class="mt-3">Cargando usuarios...</p>
+    </div>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge">
+        <!-- Header -->
+        <div class="users-header">
+            <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap: 16px;">
+                <h1 class="users-title mb-0">
+                    <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Large" />
+                    Gestión de Usuarios
+                </h1>
+                <div>
+                    <span style="color: #000; font-size: 1.1rem; font-weight: 500;">
+                        Total: @(users?.Count ?? 0) usuarios
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-card">
+            <MudTextField @bind-Value="Filter"
+                          @bind-Value:event="oninput"
+                          Label="Buscar usuarios"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          FullWidth="true"
+                          Immediate="true"
+                          Clearable="true"
+                          OnClearButtonClick="CleanFilterAsync"
+                          Placeholder="Ingrese nombre, email o documento..." />
+        </div>
+
+        <!-- Users Grid -->
+        @if (filteredUsers != null && filteredUsers.Any())
+        {
+            <MudGrid>
+                @foreach (var user in filteredUsers)
+                {
+                    <MudItem xs="12" lg="6">
+                        <div class="user-card">
+                            <div class="user-info">
+                                @if (user.Photo != null && user.Photo.Length > 0)
+                                {
+                                    <img src="data:image/jpeg;base64,@Convert.ToBase64String(user.Photo)"
+                                         alt="@user.FullName"
+                                         class="user-avatar" />
+                                }
+                                else
+                                {
+                                    <div class="user-avatar-placeholder">
+                                        @GetInitials(user.FullName)
+                                    </div>
+                                }
+                                <div class="user-details">
+                                    <div class="user-name">@user.FullName</div>
+                                    <div class="user-email">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" /> @user.Email
+                                    </div>
+                                    <div class="user-badges">
+                                        @if (user.UserType == UserType.Admin)
+                                        {
+                                            <span class="badge-custom badge-admin">
+                                                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
+                                                Administrador
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-custom badge-user">
+                                                <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                                                Usuario
+                                            </span>
+                                        }
+                                        <span class="badge-custom" style="background: #e3f2fd; color: #1976d2;">
+                                            <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" />
+                                            @user.City?.Name
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Info"
+                                           StartIcon="@Icons.Material.Filled.Visibility"
+                                           Size="Size.Small"
+                                           OnClick="@(() => ShowUserDetail(user))">
+                                    Ver
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Warning"
+                                           StartIcon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           OnClick="@(() => ShowEditModal(user))">
+                                    Editar
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="@(user.UserType == UserType.Admin ? Color.Secondary : Color.Success)"
+                                           StartIcon="@Icons.Material.Filled.SwapHoriz"
+                                           Size="Size.Small"
+                                           OnClick="@(() => ChangeUserType(user))">
+                                    @(user.UserType == UserType.Admin ? "Hacer Usuario" : "Hacer Admin")
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Error"
+                                           StartIcon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           OnClick="@(() => Delete(user.Id))">
+                                    Eliminar
+                                </MudButton>
+                            </div>
+                        </div>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <MudIcon Icon="@Icons.Material.Filled.PersonOff" Size="Size.Large" Style="opacity: 0.3; font-size: 5rem;" />
+                <p class="text-muted mt-3">No se encontraron usuarios</p>
+            </div>
+        }
+
+        <!-- Modal Detalle de Usuario -->
+        <Modal @ref="modalDetail"
+               Title="@($"Detalle de Usuario: {selectedUser?.FullName}")"
+               IsVerticallyCentered="true"
+               Size="BlazorBootstrap.ModalSize.Large">
+            <BodyTemplate>
+                @if (selectedUser != null)
+                {
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-4 text-center mb-3">
+                                @if (selectedUser.Photo != null && selectedUser.Photo.Length > 0)
+                                {
+                                    <img src="data:image/jpeg;base64,@Convert.ToBase64String(selectedUser.Photo)"
+                                         alt="@selectedUser.FullName"
+                                         style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #667eea;" />
+                                }
+                                else
+                                {
+                                    <div style="width: 150px; height: 150px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                                display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; font-weight: bold; margin: 0 auto;">
+                                        @GetInitials(selectedUser.FullName)
+                                    </div>
+                                }
+                            </div>
+                            <div class="col-md-8">
+                                <table class="table">
+                                    <tr>
+                                        <th>Nombre Completo:</th>
+                                        <td>@selectedUser.FullName</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>@selectedUser.Email</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Documento:</th>
+                                        <td>@selectedUser.Document</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Teléfono:</th>
+                                        <td>@selectedUser.PhoneNumber</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Dirección:</th>
+                                        <td>@selectedUser.Address</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Ciudad:</th>
+                                        <td>@selectedUser.City?.Name, @selectedUser.City?.States?.Name, @selectedUser.City?.States?.country?.Name</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Tipo de Usuario:</th>
+                                        <td>
+                                            @if (selectedUser.UserType == UserType.Admin)
+                                            {
+                                                <span class="badge-custom badge-admin">
+                                                    <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
+                                                    Administrador
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge-custom badge-user">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                                                    Usuario
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </BodyTemplate>
+            <FooterTemplate>
+                <Button Color="ButtonColor.Secondary" @onclick="OnHideDetailModalClick">
+                    <i class="oi oi-x"></i> Cerrar
+                </Button>
+            </FooterTemplate>
+        </Modal>
+
+        <!-- Modal Editar Usuario -->
+        <Modal @ref="modalEdit"
+               Title="@($"Editar Usuario: {selectedUser?.FullName}")"
+               IsVerticallyCentered="true"
+               Size="BlazorBootstrap.ModalSize.Large">
+            <BodyTemplate>
+                @if (selectedUser != null)
+                {
+                    <UserEditForm @ref="userEditFormRef" User="@selectedUser" />
+                }
+            </BodyTemplate>
+            <FooterTemplate>
+                <Button Color="ButtonColor.Secondary" @onclick="OnHideEditModalClick">
+                    <i class="oi oi-x"></i> Cancelar
+                </Button>
+                <Button Color="ButtonColor.Primary" @onclick="OnUpdateUserClick">
+                    <i class="oi oi-check"></i> Guardar Cambios
+                </Button>
+            </FooterTemplate>
+        </Modal>
+
+    </MudContainer>
+}
+
+@code {
+    private List<User>? users { get; set; }
+    private List<User>? filteredUsers { get; set; }
+    private bool loading = true;
+
+    private string _filter = "";
+    private string Filter
+    {
+        get => _filter;
+        set
+        {
+            _filter = value;
+            ApplyFilterAsync();
+        }
+    }
+
+    private Modal modalDetail = default!;
+    private Modal modalEdit = default!;
+    private User? selectedUser = null;
+    private UserEditForm? userEditFormRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        var responseHttp = await repository.Get<List<User>>("/api/accounts/GetAll");
+
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            loading = false;
+            return;
+        }
+
+        users = responseHttp.Response;
+        filteredUsers = users;
+        loading = false;
+    }
+
+    private void ApplyFilterAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Filter))
+        {
+            filteredUsers = users;
+            return;
+        }
+
+        filteredUsers = users?
+            .Where(x => x.FullName.ToLower().Contains(Filter.ToLower()) ||
+                        x.Email!.ToLower().Contains(Filter.ToLower()) ||
+                        x.Document.ToLower().Contains(Filter.ToLower()))
+            .ToList();
+    }
+
+    private void CleanFilterAsync()
+    {
+        _filter = string.Empty;
+        filteredUsers = users;
+    }
+
+    private string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "?";
+
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+
+        return parts[0][0].ToString().ToUpper();
+    }
+
+    private async Task ShowUserDetail(User user)
+    {
+        selectedUser = user;
+        await modalDetail?.ShowAsync();
+    }
+
+    private async Task OnHideDetailModalClick()
+    {
+        await modalDetail?.HideAsync();
+        selectedUser = null;
+    }
+
+    private async Task ShowEditModal(User user)
+    {
+        selectedUser = user;
+        await modalEdit?.ShowAsync();
+    }
+
+    private async Task OnHideEditModalClick()
+    {
+        await modalEdit?.HideAsync();
+        selectedUser = null;
+    }
+
+    private async Task OnUpdateUserClick()
+    {
+        if (userEditFormRef != null)
+        {
+            var success = await userEditFormRef.UpdateAsync();
+            if (success)
+            {
+                await modalEdit?.HideAsync();
+                await LoadAsync();
+            }
+        }
+    }
+
+    private async Task ChangeUserType(User user)
+    {
+        var newType = user.UserType == UserType.Admin ? UserType.User : UserType.Admin;
+        var typeName = newType == UserType.Admin ? "Administrador" : "Usuario";
+
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+        {
+            Title = "Confirmación",
+            Text = $"¿Está seguro que desea cambiar el tipo de usuario a {typeName}?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true
+        });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm) return;
+
+        var responseHttp = await repository.Put($"/api/accounts/ChangeUserType/{user.Email}", newType);
+
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+        {
+            Toast = true,
+            Position = SweetAlertPosition.BottomRight,
+            ShowConfirmButton = false,
+            Timer = 3000
+        });
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Tipo de usuario actualizado correctamente!");
+        await LoadAsync();
+    }
+
+    private async Task Delete(string userId)
+    {
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+        {
+            Title = "Confirmación",
+            Text = "¿Está seguro que desea eliminar este usuario? Esta acción no se puede deshacer.",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true
+        });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm) return;
+
+        var responseHttp = await repository.Delete($"/api/accounts/{userId}");
+
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        var toast = sweetAlertService.Mixin(new SweetAlertOptions
+        {
+            Toast = true,
+            Position = SweetAlertPosition.BottomRight,
+            ShowConfirmButton = false,
+            Timer = 3000
+        });
+        await toast.FireAsync(icon: SweetAlertIcon.Success, message: "Usuario eliminado correctamente!");
+        await LoadAsync();
+    }
+}

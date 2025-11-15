@@ -10,6 +10,8 @@ namespace fume.api.Helpers
     {
         Task<User> GetUserAsync(string email);
 
+        Task<User> GetUserByIdAsync(string userId);
+
         Task<IdentityResult> AddUserAsync(User user, string password);
 
         Task CheckRoleAsync(string roleName);
@@ -28,6 +30,15 @@ namespace fume.api.Helpers
 
         Task<User> GetUserAsync(Guid userId);
 
+        Task<List<User>> GetAllUsersAsync();
+
+        Task<IdentityResult> DeleteUserAsync(User user);
+
+        Task RemoveUserFromRoleAsync(User user, string roleName);
+
+        Task<string> GeneratePasswordResetTokenAsync(User user);
+
+        Task<IdentityResult> ResetPasswordAsync(User user, string token, string newPassword);
 
     }
 }
