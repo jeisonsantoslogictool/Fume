@@ -3,6 +3,7 @@
 @inject NavigationManager navigationManager
 @inject SweetAlertService sweetAlertService
 @inject IJSRuntime JS
+@using Fume.Web.Helpers
 @attribute [Authorize(Roles = "Admin")]
 
 <style>
@@ -466,9 +467,18 @@ else
         return parts[0][0].ToString().ToUpper();
     }
 
-    private async Task ShowUserDetail(User user)
+    private async Task ShowUserDetail(UserListDTO userDto)
     {
-        selectedUser = user;
+        // Cargar el usuario completo desde el backend
+        var responseHttp = await repository.Get<User>($"/api/accounts/User/{userDto.Email}");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        selectedUser = responseHttp.Response;
         await modalDetail?.ShowAsync();
     }
 
@@ -478,9 +488,18 @@ else
         selectedUser = null;
     }
 
-    private async Task ShowEditModal(User user)
+    private async Task ShowEditModal(UserListDTO userDto)
     {
-        selectedUser = user;
+        // Cargar el usuario completo desde el backend para poder editarlo
+        var responseHttp = await repository.Get<User>($"/api/accounts/User/{userDto.Email}");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        selectedUser = responseHttp.Response;
         await modalEdit?.ShowAsync();
     }
 
@@ -503,9 +522,9 @@ else
         }
     }
 
-    private async Task ChangeUserType(User user)
+    private async Task ChangeUserType(UserListDTO userDto)
     {
-        var newType = user.UserType == UserType.Admin ? UserType.User : UserType.Admin;
+        var newType = userDto.UserType == UserType.Admin ? UserType.User : UserType.Admin;
         var typeName = newType == UserType.Admin ? "Administrador" : "Usuario";
 
         var result = await sweetAlertService.FireAsync(new SweetAlertOptions
@@ -519,7 +538,7 @@ else
         var confirm = string.IsNullOrEmpty(result.Value);
         if (confirm) return;
 
-        var responseHttp = await repository.Put($"/api/accounts/ChangeUserType/{user.Email}", newType);
+        var responseHttp = await repository.Put($"/api/accounts/ChangeUserType/{userDto.Email}", newType);
 
         if (responseHttp.Error)
         {
