@@ -63,8 +63,9 @@ namespace Fume.Web.Helpers
         {
             if (hasPhoto)
             {
-                // Generar URL al endpoint de la API
-                return $"https://localhost:7074/api/accounts/photo/{userId}";
+                // Generar URL relativa al endpoint de la API
+                // El HttpClient configurado en Program.cs agregará el BaseAddress automáticamente
+                return $"https://localhost:7181/api/accounts/photo/{userId}";
             }
 
             return string.Empty; // No devolvemos fallback, dejamos que el componente maneje las iniciales

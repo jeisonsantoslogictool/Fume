@@ -139,7 +139,7 @@ namespace fume.api.Controllers
         {
             var users = await _userHelper.GetAllUsersAsync();
 
-            // Mapear usuarios a un DTO ligero sin los bytes de la foto
+            // Mapear usuarios a un DTO ligero sin los bytes de la foto`
             var usersDto = users.Select(u => new UserListDTO
             {
                 Id = u.Id,
