@@ -1,4 +1,5 @@
 ﻿using fume.api.Helpers;
+using fume.api.Data;
 using fume.shared.DTOs;
 using fume.shared.Enttities;
 using fume.shared.Enums;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -18,12 +20,14 @@ namespace fume.api.Controllers
     {
         private readonly IUserHelper _userHelper;
         private readonly IConfiguration _configuration;
+        private readonly DataContext _context;
         private readonly string _container;
 
-        public AccountsController(IUserHelper userHelper, IConfiguration configuration)
+        public AccountsController(IUserHelper userHelper, IConfiguration configuration, DataContext context)
         {
             _userHelper = userHelper;
             _configuration = configuration;
+            _context = context;
             _container = "users";
         }
 
@@ -137,23 +141,25 @@ namespace fume.api.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
         public async Task<ActionResult> GetAll()
         {
-            var users = await _userHelper.GetAllUsersAsync();
-
-            // Mapear usuarios a un DTO ligero sin los bytes de la foto`
-            var usersDto = users.Select(u => new UserListDTO
-            {
-                Id = u.Id,
-                Document = u.Document,
-                FirstName = u.FirstName,
-                LastName = u.LastName,
-                Email = u.Email,
-                PhoneNumber = u.PhoneNumber,
-                Address = u.Address,
-                UserType = u.UserType,
-                CityId = u.CityId,
-                City = u.City,
-                HasPhoto = u.Photo != null && u.Photo.Length > 0
-            }).ToList();
+            // Consulta optimizada: solo carga City, sin relaciones anidadas innecesarias
+            var usersDto = await _context.Users
+                .Include(u => u.City) // Solo carga City, no State ni Country
+                .Select(u => new UserListDTO
+                {
+                    Id = u.Id,
+                    Document = u.Document,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Email = u.Email,
+                    PhoneNumber = u.PhoneNumber,
+                    Address = u.Address,
+                    UserType = u.UserType,
+                    CityId = u.CityId,
+                    City = u.City,
+                    HasPhoto = u.Photo != null && u.Photo.Length > 0
+                })
+                .AsNoTracking() // No rastrear cambios para mejorar rendimiento
+                .ToListAsync();
 
             return Ok(usersDto);
         }

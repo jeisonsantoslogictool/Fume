@@ -32,6 +32,8 @@ namespace fume.api.Data
 
         public DbSet<TemporalSale> TemporalSales { get; set; }
 
+        public DbSet<Suggestion> Suggestions { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

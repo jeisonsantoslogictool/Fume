@@ -484,7 +484,7 @@
                     <span class="amount">@FormatHelper.FormatPrice(Total)</span>
                 </div>
 
-                <button class="checkout-btn" @onclick="ProceedToCheckout" disabled="@isUpdating">
+                <button class="checkout-btn" @onclick="ConfirmCheckout" disabled="@isUpdating">
                     <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" /> Proceder al Pago
                 </button>
 
@@ -526,7 +526,7 @@
 
         isUpdating = true;
         var newQuantity = item.Quantity + 1;
-        var success = await cartService.UpdateQuantityAsync(item.Id, newQuantity);
+        var success = await cartService.UpdateQuantityAsync(item.Id, item.ProductId, newQuantity);
 
         if (success)
         {
@@ -542,7 +542,7 @@
 
         isUpdating = true;
         var newQuantity = item.Quantity - 1;
-        var success = await cartService.UpdateQuantityAsync(item.Id, newQuantity);
+        var success = await cartService.UpdateQuantityAsync(item.Id, item.ProductId, newQuantity);
 
         if (success)
         {
@@ -616,9 +616,45 @@
         isUpdating = false;
     }
 
-    private void ProceedToCheckout()
+    private async Task ConfirmCheckout()
     {
-        navigationManager.NavigateTo("/checkout");
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+        {
+            Title = "Confirmar compra",
+            Text = $"¿Deseas procesar el pago por un total de {FormatHelper.FormatPrice(Total)}?",
+            Icon = SweetAlertIcon.Question,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Sí, confirmar pago",
+            CancelButtonText = "Cancelar",
+            ConfirmButtonColor = "#27ae60"
+        });
+
+        if (result.IsConfirmed)
+        {
+            await ProcessCheckout();
+        }
+    }
+
+    private async Task ProcessCheckout()
+    {
+        isUpdating = true;
+        var success = await cartService.ClearCartAsync();
+
+        if (success)
+        {
+            await LoadCartAsync();
+
+            await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Icon = SweetAlertIcon.Success,
+                Title = "¡Compra realizada!",
+                Text = "Tu compra se ha procesado exitosamente. Pronto recibirás una confirmación.",
+                ConfirmButtonText = "Aceptar",
+                ConfirmButtonColor = "#27ae60"
+            });
+        }
+
+        isUpdating = false;
     }
 
     private void ContinueShopping()

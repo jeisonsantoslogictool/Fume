@@ -1,8 +1,13 @@
+@inject Fume.Web.Repositories.IRepository repository
+@inject SweetAlertService sweetAlertService
+@using fume.shared.DTOs
+@using CurrieTechnologies.Razor.SweetAlert2
+
 @* Footer con información de ITplus *@
 <footer class="footer-container">
     <MudContainer MaxWidth="MaxWidth.Large">
         <MudGrid Spacing="4" Class="py-6">
-            <MudItem xs="12" md="8">
+            <MudItem xs="12" md="5">
                 <MudText Typo="Typo.h5" Class="footer-title mb-3">Conócenos</MudText>
 
                 <MudExpansionPanels MultiExpansion="true" Elevation="0">
@@ -45,7 +50,7 @@
                 </MudExpansionPanels>
             </MudItem>
 
-            <MudItem xs="12" md="4">
+            <MudItem xs="12" md="3">
                 <MudText Typo="Typo.h5" Class="footer-title mb-3">Contacto</MudText>
                 <MudStack Spacing="2">
                     <MudText Typo="Typo.body2" Class="footer-text">
@@ -56,9 +61,9 @@
                         <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Class="mr-2" />
                         +1 (809) 577 6975
                     </MudText>
-           
-              
-                  
+
+
+
                     <MudText Typo="Typo.body2" Class="footer-text">
                         <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Class="mr-2" />
                         Moca, Republica Dominicana
@@ -75,6 +80,68 @@
                     <MudIconButton Icon="@Icons.Custom.Brands.Instagram" Color="Color.Secondary" Size="Size.Medium" Href="https://www.instagram.com/itplusdom?igsh=amV0YTlqbXJ0Y2Jk" Target="_blank" />
                 </MudStack>
             </MudItem>
+
+            <MudItem xs="12" md="4">
+                <div class="suggestions-card">
+                    <div class="suggestions-header">
+                        <MudIcon Icon="@Icons.Material.Filled.Lightbulb" Class="suggestions-icon" />
+                        <MudText Typo="Typo.h5" Class="suggestions-title">Tus sugerencias importan</MudText>
+                        <MudText Typo="Typo.body2" Class="suggestions-subtitle">
+                            Ayúdanos a mejorar compartiendo tus ideas
+                        </MudText>
+                    </div>
+
+                    <MudStack Spacing="3" Class="suggestions-form">
+                        <MudTextField @bind-Value="suggestionModel.Name"
+                                      Label="Tu nombre"
+                                      Variant="Variant.Filled"
+                                      MaxLength="100"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Person"
+                                      AdornmentColor="Color.Primary"
+                                      Class="modern-input" />
+
+                        <MudTextField @bind-Value="suggestionModel.Email"
+                                      Label="Tu email"
+                                      Variant="Variant.Filled"
+                                      InputType="InputType.Email"
+                                      MaxLength="100"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Email"
+                                      AdornmentColor="Color.Primary"
+                                      Class="modern-input" />
+
+                        <MudTextField @bind-Value="suggestionModel.Message"
+                                      Label="Tu mensaje"
+                                      Variant="Variant.Filled"
+                                      Lines="3"
+                                      MaxLength="1000"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Message"
+                                      AdornmentColor="Color.Primary"
+                                      Class="modern-input" />
+
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   OnClick="SendSuggestion"
+                                   Disabled="isSending"
+                                   FullWidth="true"
+                                   Size="Size.Large"
+                                   Class="suggestion-submit-btn">
+                            @if (isSending)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                <span>Enviando...</span>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Send" Size="Size.Small" Class="mr-2" />
+                                <span>Enviar Sugerencia</span>
+                            }
+                        </MudButton>
+                    </MudStack>
+                </div>
+            </MudItem>
         </MudGrid>
 
         <MudDivider Class="my-3" />
@@ -86,5 +153,70 @@
 </footer>
 
 @code {
-    // Aquí se pueden agregar parámetros personalizables si es necesario
+    private SuggestionDTO suggestionModel = new SuggestionDTO();
+    private bool isSending = false;
+
+    private async Task SendSuggestion()
+    {
+        // Validar que los campos no estén vacíos
+        if (string.IsNullOrWhiteSpace(suggestionModel.Name) ||
+            string.IsNullOrWhiteSpace(suggestionModel.Email) ||
+            string.IsNullOrWhiteSpace(suggestionModel.Message))
+        {
+            await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Icon = SweetAlertIcon.Warning,
+                Title = "Campos requeridos",
+                Text = "Por favor, completa todos los campos del formulario.",
+                ConfirmButtonText = "Aceptar"
+            });
+            return;
+        }
+
+        // Validar email
+        if (!IsValidEmail(suggestionModel.Email))
+        {
+            await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Icon = SweetAlertIcon.Warning,
+                Title = "Email inválido",
+                Text = "Por favor, ingresa un email válido.",
+                ConfirmButtonText = "Aceptar"
+            });
+            return;
+        }
+
+        isSending = true;
+
+        // Simular envío de 2 segundos (DEMO)
+        await Task.Delay(2000);
+
+        // Mostrar mensaje de éxito (simulado)
+        await sweetAlertService.FireAsync(new SweetAlertOptions
+        {
+            Icon = SweetAlertIcon.Success,
+            Title = "¡Gracias por tu sugerencia!",
+            Text = "Hemos recibido tu mensaje. Lo revisaremos pronto.",
+            ConfirmButtonText = "Aceptar",
+            ConfirmButtonColor = "#27ae60"
+        });
+
+        // Limpiar el formulario
+        suggestionModel = new SuggestionDTO();
+
+        isSending = false;
+    }
+
+    private bool IsValidEmail(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

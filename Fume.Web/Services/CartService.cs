@@ -117,11 +117,12 @@ namespace Fume.Web.Services
         /// <summary>
         /// Actualiza la cantidad de un item en el carrito
         /// </summary>
-        public async Task<bool> UpdateQuantityAsync(int temporalSaleId, float newQuantity)
+        public async Task<bool> UpdateQuantityAsync(int temporalSaleId, int productId, float newQuantity)
         {
             var temporalSaleDTO = new TemporalSaleDTO
             {
                 Id = temporalSaleId,
+                ProductId = productId,
                 Quantity = newQuantity
             };
 
