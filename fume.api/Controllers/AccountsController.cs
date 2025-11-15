@@ -110,7 +110,6 @@ namespace fume.api.Controllers
                 new Claim("FirstName", user.FirstName),
                 new Claim("LastName", user.LastName),
                 new Claim("Address", user.Address),
-                new Claim("Photo", Convert.ToBase64String(user.Photo ?? new byte[0])),
                 new Claim("CityId", user.CityId.ToString())
             };
 
